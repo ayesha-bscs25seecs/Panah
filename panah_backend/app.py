@@ -21,13 +21,14 @@ Flow:
 
 Run locally:
     export DASHSCOPE_API_KEY="your-key-here"
-    pip install flask openai --break-system-packages
+    pip install flask openai flask-cors --break-system-packages
     python app.py
 """
 
 import os
 import logging
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from openai import OpenAI
 
 from retrieval import kb
@@ -36,6 +37,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("panah")
 
 app = Flask(__name__)
+
+# Allow the frontend (served from a different port, e.g. localhost:8000 via
+# `python -m http.server`) to call this API. Without this, browsers block
+# the request with a CORS error even though the backend itself is running fine.
+# For the hackathon demo this is wide open (allow all origins); if you deploy
+# publicly later, tighten this to your actual frontend's domain.
+CORS(app)
 
 # --- Qwen / DashScope client setup -----------------------------------------
 # Uses the OpenAI-compatible SDK pointed at Alibaba Cloud's international

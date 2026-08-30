@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ur" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Panah — aapka mahfooz sahara. Financial rights guidance for Pakistani women." />
+  <!-- Privacy: no referrer leakage -->
+  <meta name="referrer" content="no-referrer" />
+  <title>Panah — aapka mahfooz sahara</title>
+
+  <!-- Inline SVG favicon (shield icon) — no external requests -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== APP SHELL ===== -->
+  <div id="app" role="main" aria-label="Panah chat application">
+
+    <!-- ===== HEADER BAR ===== -->
+    <header id="chat-header" role="banner">
+      <div class="header-left">
+        <!-- Shield avatar icon (inline SVG, no external dependency) -->
+        <div class="avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#f5f3f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4" stroke="#f5f3f1" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1 class="app-name">Panah</h1>
+          <p class="subtitle" id="subtitle-text">aapka mahfooz sahara</p>
+          <!-- Typing indicator shown in header while waiting for a reply -->
+          <div class="typing-indicator-header" id="typing-indicator-header" aria-live="polite" aria-label="Bot is typing" hidden>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speaker toggle: mute / unmute bot voice replies -->
+      <button
+        id="speaker-toggle"
+        class="header-btn"
+        type="button"
+        aria-label="Toggle voice replies"
+        title="Toggle voice replies"
+      >
+        <!-- Speaker-on icon (default) -->
+        <svg id="speaker-on-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+        <!-- Speaker-off icon (hidden by default) -->
+        <svg id="speaker-off-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden>
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- ===== CHAT MESSAGES AREA ===== -->
+    <div
+      id="chat-area"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-label="Chat messages"
+    >
+      <!-- Messages are injected here by script.js -->
+    </div>
+
+    <!-- ===== INPUT BAR ===== -->
+    <footer id="input-bar" role="contentinfo">
+      <div class="input-wrapper">
+        <input
+          id="message-input"
+          type="text"
+          autocomplete="off"
+          maxlength="500"
+          placeholder="Apna sawaal likhein ya bolein..."
+          aria-label="Type your question"
+        />
+
+        <!-- Microphone button for voice input (hidden if unsupported) -->
+        <button
+          id="mic-btn"
+          class="input-btn"
+          type="button"
+          aria-label="Speak your question"
+          title="Speak your question"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Send button -->
+      <button
+        id="send-btn"
+        class="input-btn send-btn"
+        type="button"
+        aria-label="Send message"
+        title="Send"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </footer>
+
+  </div><!-- /#app -->
+
+  <!-- Application logic — vanilla JS, no build tools required -->
+  <script src="script.js"></script>
+</body>
+</html>

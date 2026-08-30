@@ -1,0 +1,399 @@
+/* ==========================================================================
+   Panah — style.css
+   WhatsApp-style chat UI  •  Mobile-first  •  Color palette:
+     --cream:    #f5f3f1   (page background)
+     --copper:   #b4866c   (accents, header highlights)
+     --teal:     #1f3e43   (header bar, primary dark)
+     --gray:     #787570   (secondary text)
+     --maroon:   #5b2c36   (emphasis, deep accent)
+     --wa-green: #DCF8C6   (user bubble, WhatsApp-style)
+   ========================================================================== */
+
+/* ---------- CSS Custom Properties (easy theming) ---------- */
+:root {
+  --cream:    #f5f3f1;
+  --copper:   #b4866c;
+  --teal:     #1f3e43;
+  --gray:     #787570;
+  --maroon:   #5b2c36;
+  --wa-green: #dcf8c6;
+  --white:    #ffffff;
+  --danger:   #c0392b;
+
+  --font-base: "Segoe UI", "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq",
+               system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Safe-area insets for notched phones */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Layout */
+  --header-height: 64px;
+  --input-bar-height: 60px;
+  --max-chat-width: 720px;
+  --bubble-max: 78%;
+}
+
+/* ---------- Global Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;             /* chat area scrolls, not the page */
+  font-family: var(--font-base);
+  background-color: var(--cream);
+  color: var(--teal);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove default outline; add a clear focus ring instead */
+:focus { outline: none; }
+:focus-visible {
+  outline: 3px solid var(--copper);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- App Shell (full viewport, flex column) ---------- */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;               /* dynamic viewport height for mobile browsers */
+  max-width: var(--max-chat-width);
+  margin: 0 auto;
+  background-color: var(--cream);
+  box-shadow: 0 0 20px rgba(31, 62, 67, 0.08);
+}
+
+/* ==========================================================================
+   HEADER BAR
+   ========================================================================== */
+#chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  padding: 0 14px;
+  padding-top: var(--safe-top);
+  background-color: var(--teal);
+  color: var(--cream);
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* Left side: avatar + text */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: var(--copper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--cream);
+}
+
+.subtitle {
+  font-size: 0.72rem;
+  color: var(--copper);
+  font-style: italic;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+/* Typing indicator shown in the header subtitle area while bot is "thinking" */
+.typing-indicator-header {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 3px;
+}
+
+/* Ensure the indicator fully hides when the [hidden] attribute is set */
+.typing-indicator-header[hidden] {
+  display: none !important;
+}
+
+.typing-indicator-header .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--copper);
+  animation: bounce-dot 1.2s infinite ease-in-out;
+}
+.typing-indicator-header .dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator-header .dot:nth-child(3) { animation-delay: 0.3s;  }
+
+@keyframes bounce-dot {
+  0%,  60%, 100% { transform: translateY(0);   opacity: 0.4; }
+  30%            { transform: translateY(-5px); opacity: 1;   }
+}
+
+/* Header buttons (speaker toggle) */
+.header-btn {
+  background: none;
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+.header-btn:hover  { background-color: rgba(245, 243, 241, 0.1); }
+.header-btn:active { background-color: rgba(245, 243, 241, 0.2); }
+
+/* ==========================================================================
+   CHAT AREA
+   ========================================================================== */
+#chat-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 12px 8px;
+  scroll-behavior: smooth;
+
+  /* Subtle WhatsApp-style chat wallpaper tint */
+  background-color: #ede8e2;
+  background-image:
+    radial-gradient(ellipse at 20% 80%, rgba(180, 134, 108, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(31,  62,  67, 0.06) 0%, transparent 60%);
+
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--copper) transparent;
+}
+/* Chrome / Edge scrollbar */
+#chat-area::-webkit-scrollbar { width: 5px; }
+#chat-area::-webkit-scrollbar-track { background: transparent; }
+#chat-area::-webkit-scrollbar-thumb { background-color: var(--copper); border-radius: 10px; }
+
+/* ---------- Message Bubbles ---------- */
+.msg-row {
+  display: flex;
+  margin-bottom: 6px;
+}
+.msg-row.user  { justify-content: flex-end; }
+.msg-row.bot   { justify-content: flex-start; }
+
+.msg-bubble {
+  max-width: var(--bubble-max);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* User bubble — WhatsApp green */
+.msg-row.user .msg-bubble {
+  background-color: var(--wa-green);
+  color: var(--teal);
+  border-top-right-radius: 2px;   /* "tail" corner */
+}
+
+/* Bot bubble — white */
+.msg-row.bot .msg-bubble {
+  background-color: var(--white);
+  color: #2c2c2c;
+  border-top-left-radius: 2px;    /* "tail" corner */
+}
+
+/* Timestamp inside bubble */
+.msg-time {
+  display: block;
+  text-align: right;
+  font-size: 0.62rem;
+  color: var(--gray);
+  margin-top: 4px;
+  opacity: 0.85;
+  user-select: none;
+}
+
+/* ---------- Typing Indicator Bubble (three bouncing dots) ---------- */
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 16px;
+}
+.typing-bubble .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--gray);
+  animation: bounce-dot 1.2s infinite ease-in-out;
+}
+.typing-bubble .dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-bubble .dot:nth-child(3) { animation-delay: 0.3s;  }
+
+/* ==========================================================================
+   INPUT BAR
+   ========================================================================== */
+#input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  padding-bottom: calc(8px + var(--safe-bottom));
+  background-color: #f0ebe5;
+  border-top: 1px solid rgba(31, 62, 67, 0.1);
+  flex-shrink: 0;
+}
+
+.input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: var(--white);
+  border: 1px solid rgba(31, 62, 67, 0.15);
+  border-radius: 24px;
+  padding: 0 6px 0 14px;
+  height: 44px;
+  transition: border-color 0.2s;
+}
+.input-wrapper:focus-within {
+  border-color: var(--copper);
+}
+
+#message-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 0.92rem;
+  font-family: var(--font-base);
+  color: var(--teal);
+  height: 100%;
+  padding: 0;
+  min-width: 0;
+}
+#message-input::placeholder { color: var(--gray); opacity: 0.7; }
+#message-input:focus { outline: none; }
+
+/* Generic icon button style (mic + send) */
+.input-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  color: var(--gray);
+  flex-shrink: 0;
+  transition: color 0.2s, background-color 0.2s, transform 0.1s;
+}
+.input-btn:hover   { color: var(--copper); background-color: rgba(180, 134, 108, 0.12); }
+.input-btn:active  { transform: scale(0.92); }
+
+/* Send button — circular teal background */
+.send-btn {
+  width: 44px;
+  height: 44px;
+  background-color: var(--teal);
+  color: var(--cream);
+  border-radius: 50%;
+}
+.send-btn:hover   { background-color: #17333a; color: var(--cream); }
+.send-btn:active  { background-color: #0f2428; }
+.send-btn:disabled {
+  background-color: var(--gray);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mic button active state (recording) */
+#mic-btn.recording {
+  color: var(--danger);
+  background-color: rgba(192, 57, 43, 0.1);
+  animation: pulse-ring 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(192, 57, 43, 0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(192, 57, 43, 0);   }
+}
+
+/* ==========================================================================
+   DESKTOP ENHANCEMENTS (min-width: 600px)
+   ========================================================================== */
+@media (min-width: 600px) {
+  :root {
+    --header-height: 70px;
+    --input-bar-height: 66px;
+  }
+
+  #chat-header { padding: 0 20px; }
+
+  .app-name  { font-size: 1.35rem; }
+  .subtitle  { font-size: 0.78rem; }
+
+  #chat-area { padding: 16px 20px 10px; }
+
+  .msg-bubble { font-size: 0.96rem; padding: 10px 14px; }
+
+  #input-bar  { padding: 10px 20px; }
+  .input-wrapper { height: 48px; }
+  #message-input  { font-size: 0.96rem; }
+}
+
+/* Very wide screens — center the app with side margins */
+@media (min-width: 900px) {
+  body { background-color: #d9d2ca; }
+  #app {
+    margin-top: 24px;
+    margin-bottom: 24px;
+    height: calc(100dvh - 48px);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(31, 62, 67, 0.18);
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY — prefers-reduced-motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  #chat-area { scroll-behavior: auto; }
+}
+
+/* ==========================================================================
+   HIGH-CONTRAST / DARK MODE HINTS (optional, future extension)
+   ========================================================================== */
+/* @media (prefers-color-scheme: dark) { ... } */
