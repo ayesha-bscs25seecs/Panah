@@ -26,6 +26,8 @@ Run locally:
 """
 
 import os
+import re
+import json
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -65,17 +67,25 @@ else:
 # --- System prompt (tone + rules) -------------------------------------------
 SYSTEM_PROMPT = """You are Panah, a warm, respectful AI assistant that helps rural and \
 underprivileged Pakistani women understand their financial rights and protect \
-themselves from scams. You speak in simple, spoken-style Urdu — never formal, \
-legalistic, or academic language. Keep answers short, warm, and clear, as if \
-explained by a caring, knowledgeable friend or teacher.
+themselves from scams. Keep answers short, warm, and clear, as if explained by \
+a caring, knowledgeable friend or teacher — never formal, legalistic, or academic.
+
+LANGUAGE RULE (very important):
+Always reply in the SAME language and script the user used to ask their question:
+- If the user wrote in English, reply in English.
+- If the user wrote in Urdu script (e.g. "میرا شوہر مجھے خرچہ نہیں دیتا"), reply in Urdu script.
+- If the user wrote in Roman Urdu (Urdu words spelled with English/Latin letters,
+  e.g. "mera shohar mujhe kharcha nahi deta"), reply in Roman Urdu the same way.
+- If a question mixes languages, mirror whichever style dominates the question.
+- Never default to one language regardless of what the user wrote — detect it fresh
+  for every question, since the same conversation may switch between languages.
 
 Rules:
 - Base your answer ONLY on the "Verified information" provided below. Do not \
 add facts, laws, or rulings that aren't in it.
-- If the verified information is in English, translate the meaning into \
-natural spoken-style Urdu for your answer — do not answer in English.
-- If the verified information is already in Urdu, you may lightly adapt it \
-for a natural conversational flow but do not change its meaning.
+- The verified information itself may be in English or Urdu — regardless of \
+which, translate/adapt its meaning into whatever language the RULE above says \
+to answer in. Do not change its meaning while translating.
 - Keep the tone gentle and non-judgmental. Never make the user feel blamed \
 or embarrassed for asking.
 - Do not give legal advice as if you are a lawyer — you are sharing \
@@ -88,7 +98,7 @@ figure) or Alkhidmat Foundation's women's welfare network before formal \
 institutions, unless the verified information specifically says otherwise."""
 
 
-def build_user_prompt(user_question: str, matched_entry: dict) -> str:
+def build_user_prompt(user_question: str, matched_entry: dict, language_label: str) -> str:
     context_lines = [f"Verified information:\n{matched_entry['answer']}"]
     if matched_entry.get("legal_basis"):
         context_lines.append(f"\nLegal basis: {matched_entry['legal_basis']}")
@@ -99,12 +109,121 @@ def build_user_prompt(user_question: str, matched_entry: dict) -> str:
 
     context_block = "\n".join(context_lines)
     return (
-        f"User's question (may be in Roman Urdu, Urdu script, or English): "
-        f"\"{user_question}\"\n\n"
+        f"User's question (original, exact wording): \"{user_question}\"\n\n"
         f"{context_block}\n\n"
-        f"Now answer the user's question in simple, spoken-style Urdu, "
-        f"using only the verified information above."
+        f"You MUST answer in: {language_label}. This has already been determined "
+        f"for you — do not re-guess the language yourself, just write your answer "
+        f"in it, using only the verified information above."
     )
+
+
+# --- Simple language detection for the NO-MATCH fallback message only ------
+# (When an LLM call happens, the LLM itself handles language-matching per the
+# LANGUAGE RULE in SYSTEM_PROMPT — this heuristic is only needed for the
+# static fallback text below, which never goes through the LLM.)
+_URDU_SCRIPT_RE = re.compile(r"[\u0600-\u06FF]")
+_ENGLISH_HINT_WORDS = {
+    "the", "is", "are", "what", "how", "why", "when", "where", "can",
+    "do", "does", "my", "husband", "wife", "money", "rights", "should",
+    "will", "please", "help", "get", "give", "have", "need", "want",
+}
+
+NO_MATCH_MESSAGES = {
+    "urdu_script": (
+        "معذرت، مجھے ابھی اس سوال کا جواب اپنی معلومات میں نہیں ملا۔ "
+        "آپ اپنا سوال تھوڑا اور واضح طریقے سے پوچھ سکتی ہیں، یا کسی بھروسے مند "
+        "سہارے (جیسے الخدمت فاؤنڈیشن) سے رابطہ کر سکتی ہیں۔"
+    ),
+    "english": (
+        "Sorry, I don't have an answer for that question yet in my current "
+        "knowledge. You could try rephrasing your question, or reach out to "
+        "a trusted resource like the Alkhidmat Foundation."
+    ),
+    "roman_urdu": (
+        "Maazrat, mujhe abhi is sawaal ka jawab apni maloomat mein "
+        "nahi mila. Aap apna sawaal thora aur waazeh tareeqe se pooch "
+        "sakti hain, ya kisi bharosemand sahara (jaise Alkhidmat "
+        "Foundation) se raabta kar sakti hain."
+    ),
+}
+
+
+def detect_language(text: str) -> str:
+    """Rough heuristic to pick which fallback message to show when no KB
+    entry matches. Returns 'urdu_script', 'english', or 'roman_urdu'."""
+    if _URDU_SCRIPT_RE.search(text):
+        return "urdu_script"
+
+    words = set(re.findall(r"[a-zA-Z']+", text.lower()))
+    if not words:
+        return "roman_urdu"  # default assumption for this user base
+
+    english_hits = len(words & _ENGLISH_HINT_WORDS)
+    # If a meaningful chunk of the words are common English function words,
+    # treat it as English. Otherwise assume Roman Urdu (Urdu words spelled
+    # in Latin letters won't match this English hint list).
+    if english_hits >= 2 or (len(words) <= 4 and english_hits >= 1):
+        return "english"
+    return "roman_urdu"
+
+
+LANGUAGE_LABELS = {
+    "english": "English",
+    "roman_urdu": "Roman Urdu (Urdu words spelled out in Latin/English letters, casual spoken style)",
+    "urdu_script": "Urdu script (اردو رسم الخط)",
+}
+
+
+def classify_and_translate(user_question: str) -> dict:
+    """Use the LLM once, upfront, to reliably (a) detect which of the three
+    languages the user actually wrote in, and (b) produce a plain-English
+    version of the question for keyword retrieval — since the knowledge base's
+    keywords are English/Roman Urdu only, a raw Urdu-script question would
+    otherwise never match anything.
+
+    Returns {"language": "english"|"roman_urdu"|"urdu_script", "english_query": str}.
+    Falls back to the local heuristic + the original text if the LLM call
+    fails or returns something unparseable, so retrieval still runs either way.
+    """
+    fallback = {"language": detect_language(user_question), "english_query": user_question}
+
+    if client is None:
+        return fallback
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            max_tokens=200,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You detect language and translate for a search system. "
+                        "Respond with ONLY a JSON object, no other text, no markdown "
+                        "fences, in exactly this shape: "
+                        '{"language": "english" | "roman_urdu" | "urdu_script", '
+                        '"english_query": "<the meaning of the input, in plain English>"}. '
+                        '"roman_urdu" means Urdu words spelled out using Latin/English '
+                        "letters (e.g. \"mera shohar kharcha nahi deta\"), even with "
+                        "inconsistent or phonetic spelling. \"urdu_script\" means written "
+                        "in Urdu/Arabic script. Otherwise use \"english\"."
+                    ),
+                },
+                {"role": "user", "content": user_question},
+            ],
+        )
+        raw = response.choices[0].message.content.strip()
+        # Strip accidental markdown code fences if the model adds them anyway.
+        raw = re.sub(r"^```(?:json)?|```$", "", raw.strip(), flags=re.MULTILINE).strip()
+        parsed = json.loads(raw)
+        language = parsed.get("language")
+        english_query = parsed.get("english_query")
+        if language not in LANGUAGE_LABELS or not english_query:
+            raise ValueError("Unexpected shape from language classifier")
+        return {"language": language, "english_query": english_query}
+    except Exception:
+        logger.exception("Language classification/translation step failed, using fallback")
+        return fallback
 
 
 @app.route("/ask", methods=["POST"])
@@ -115,25 +234,30 @@ def ask():
     if not user_question:
         return jsonify({"error": "Missing 'question' in request body."}), 400
 
-    matched_entry = kb.get_best_match(user_question)
+    classification = classify_and_translate(user_question)
+    detected_lang = classification["language"]
+    search_query = classification["english_query"]
+
+    matched_entry = kb.get_best_match(search_query)
+    # If searching the translated/English version found nothing, also try the
+    # raw original text — helps for English/Roman Urdu questions where the
+    # original wording may actually match keywords better than a paraphrase.
+    if not matched_entry and search_query != user_question:
+        matched_entry = kb.get_best_match(user_question)
 
     if not matched_entry:
         logger.info("No confident match for question: %r", user_question)
         return jsonify({
-            "answer": (
-                "Maazrat, mujhe abhi is sawaal ka jawab apni maloomat mein "
-                "nahi mila. Aap apna sawaal thora aur waazeh tareeqe se pooch "
-                "sakti hain, ya kisi bharosemand sahara (jaise Alkhidmat "
-                "Foundation) se raabta kar sakti hain."
-            ),
+            "answer": NO_MATCH_MESSAGES[detected_lang],
             "matched_topic": None,
             "matched_question": None,
             "sources": [],
         })
 
     logger.info(
-        "Matched question %r -> [%s / %s]",
-        user_question, matched_entry["topic_id"], matched_entry["id"],
+        "Matched question %r (lang=%s, search_query=%r) -> [%s / %s]",
+        user_question, detected_lang, search_query,
+        matched_entry["topic_id"], matched_entry["id"],
     )
 
     if client is None:
@@ -148,12 +272,13 @@ def ask():
         })
 
     try:
+        language_label = LANGUAGE_LABELS[detected_lang]
         response = client.chat.completions.create(
             model=MODEL_NAME,
             max_tokens=600,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_user_prompt(user_question, matched_entry)},
+                {"role": "user", "content": build_user_prompt(user_question, matched_entry, language_label)},
             ],
         )
         llm_answer = response.choices[0].message.content
