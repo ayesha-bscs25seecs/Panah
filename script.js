@@ -5,7 +5,7 @@
  *
  * FEATURES
  *  - Sends questions to the Flask /ask API and displays replies
- *  - Voice input via browser SpeechRecognition (ur-PK)
+ *  - Voice input via browser SpeechRecognition (toggleable Urdu/English)
  *  - Voice output via browser SpeechSynthesis (auto-reads bot replies)
  *  - Typing indicator while waiting for the backend
  *  - Graceful fallback if speech APIs are unavailable
@@ -16,7 +16,7 @@
  *    create a modal overlay; persist prefs in sessionStorage only.
  *  - Add a language switch: swap SPEECH_LANG and update placeholder text.
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 /* ===================================================================
@@ -32,8 +32,19 @@ const REQUEST_TIMEOUT_MS = 15000;
 /** Maximum characters allowed per question. */
 const MAX_QUESTION_LENGTH = 500;
 
-/** Language code for speech APIs. */
+/** Language code for speech OUTPUT (bot reading replies aloud). Unchanged. */
 const SPEECH_LANG = "ur-PK";
+
+/**
+ * Language codes for speech INPUT (mic transcription).
+ * The browser's SpeechRecognition API can only listen in one language per
+ * recording session — it cannot auto-detect which language is being spoken.
+ * This is why a manual toggle is needed instead of relying on detection.
+ */
+const MIC_LANGUAGES = {
+  ur: "ur-PK",
+  en: "en-US",
+};
 
 /** Welcome message shown when the page first loads. */
 const WELCOME_MESSAGE =
@@ -71,6 +82,13 @@ let recognition = null;
 
 /** Whether the mic is currently actively listening. */
 let isListening = false;
+
+/**
+ * Which language the mic should listen in: "ur" or "en".
+ * Defaults to "ur" since Urdu/Roman Urdu is the primary language for this
+ * app's users — English is the exception, toggled on deliberately.
+ */
+let micLanguage = "ur";
 
 /* ===================================================================
    4. UTILITY HELPERS
@@ -359,6 +377,11 @@ function initVoices() {
 /**
  * Initialises the SpeechRecognition API.
  * Returns the recognition instance, or null if unsupported.
+ *
+ * NOTE: rec.lang is no longer hardcoded here — it's set fresh each time
+ * listening starts (see toggleMic), based on the current micLanguage state,
+ * since the API only supports one language per session and can't switch
+ * mid-recording.
  */
 function initSpeechRecognition() {
   const SR =
@@ -372,7 +395,6 @@ function initSpeechRecognition() {
   }
 
   const rec = new SR();
-  rec.lang = SPEECH_LANG;
   rec.interimResults = false;   // We only want the final transcript
   rec.maxAlternatives = 1;
   rec.continuous = false;
@@ -399,6 +421,8 @@ function initSpeechRecognition() {
 
 /**
  * Toggles the microphone on/off.
+ * Sets recognition.lang from the current micLanguage state right before
+ * starting, since the language can't be changed while listening is active.
  */
 function toggleMic() {
   if (!recognition) return;
@@ -408,6 +432,7 @@ function toggleMic() {
     isListening = false;
     micBtn.classList.remove("recording");
   } else {
+    recognition.lang = MIC_LANGUAGES[micLanguage];
     try {
       recognition.start();
       isListening = true;
@@ -419,6 +444,69 @@ function toggleMic() {
       micBtn.classList.remove("recording");
     }
   }
+}
+
+/* ===================================================================
+   9b. MIC LANGUAGE TOGGLE  (switch mic between Urdu and English)
+   =================================================================== */
+
+/**
+ * Creates the small UR/EN toggle button next to the mic and inserts it
+ * into the DOM. Built and styled inline in JS (rather than relying on
+ * index.html/style.css markup that may not exist yet) so this feature is
+ * self-contained and doesn't require edits to the other two files.
+ *
+ * @returns {HTMLButtonElement|null} the created button, or null if the
+ *   mic button itself isn't present (e.g. speech recognition unsupported).
+ */
+function createMicLanguageToggle() {
+  if (!micBtn || !micBtn.parentNode) return null;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "mic-lang-toggle";
+  btn.setAttribute("aria-label", "Switch microphone language");
+  btn.title = "Switch microphone language (Urdu / English)";
+
+  // Minimal inline styling so it doesn't depend on style.css rules that
+  // may not exist for it. Kept small and unobtrusive, matching the
+  // existing WhatsApp-style green accent already used elsewhere.
+  Object.assign(btn.style, {
+    marginInlineStart: "6px",
+    padding: "2px 8px",
+    fontSize: "11px",
+    fontWeight: "600",
+    lineHeight: "1.6",
+    borderRadius: "999px",
+    border: "1px solid #075E54",
+    background: "#FFFFFF",
+    color: "#075E54",
+    cursor: "pointer",
+    userSelect: "none",
+  });
+
+  updateMicLanguageToggleLabel(btn);
+
+  btn.addEventListener("click", () => {
+    micLanguage = micLanguage === "ur" ? "en" : "ur";
+    updateMicLanguageToggleLabel(btn);
+  });
+
+  micBtn.parentNode.insertBefore(btn, micBtn.nextSibling);
+  return btn;
+}
+
+/**
+ * Updates the toggle button's label/title to reflect the current
+ * micLanguage state.
+ * @param {HTMLButtonElement} btn
+ */
+function updateMicLanguageToggleLabel(btn) {
+  const isUrdu = micLanguage === "ur";
+  btn.textContent = isUrdu ? "UR" : "EN";
+  btn.title = isUrdu
+    ? "Mic is listening in Urdu — tap to switch to English"
+    : "Mic is listening in English — tap to switch to Urdu";
 }
 
 /* ===================================================================
@@ -482,6 +570,12 @@ window.addEventListener("beforeunload", () => {
   // Initialise speech systems
   initVoices();
   recognition = initSpeechRecognition();
+
+  // Only add the language toggle if speech recognition is actually
+  // supported (initSpeechRecognition hides micBtn entirely otherwise).
+  if (recognition) {
+    createMicLanguageToggle();
+  }
 
   // Show the welcome greeting from the bot
   appendMessage(WELCOME_MESSAGE, "bot");
