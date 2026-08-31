@@ -150,11 +150,23 @@ NO_MATCH_MESSAGES = {
 
 def detect_language(text: str) -> str:
     """Rough heuristic to pick which fallback message to show when no KB
-    entry matches. Returns 'urdu_script', 'english', or 'roman_urdu'."""
+    entry matches, or when no LLM is available to classify. Returns
+    'urdu_script', 'english', or 'roman_urdu'."""
+    lower = text.lower()
+
+    # An explicit request for a specific reply language always wins, even if
+    # it's phrased in a different language than the rest of the message.
+    if re.search(r"\bin urdu\b|\burdu mein\b|\burdu script\b", lower):
+        return "urdu_script"
+    if re.search(r"\bin roman urdu\b|\broman urdu mein\b", lower):
+        return "roman_urdu"
+    if re.search(r"\bin english\b|\breply in english\b", lower):
+        return "english"
+
     if _URDU_SCRIPT_RE.search(text):
         return "urdu_script"
 
-    words = set(re.findall(r"[a-zA-Z']+", text.lower()))
+    words = set(re.findall(r"[a-zA-Z']+", lower))
     if not words:
         return "roman_urdu"  # default assumption for this user base
 
@@ -198,15 +210,33 @@ def classify_and_translate(user_question: str) -> dict:
                 {
                     "role": "system",
                     "content": (
-                        "You detect language and translate for a search system. "
+                        "You detect the reply language and translate for a search system. "
                         "Respond with ONLY a JSON object, no other text, no markdown "
                         "fences, in exactly this shape: "
                         '{"language": "english" | "roman_urdu" | "urdu_script", '
-                        '"english_query": "<the meaning of the input, in plain English>"}. '
-                        '"roman_urdu" means Urdu words spelled out using Latin/English '
-                        "letters (e.g. \"mera shohar kharcha nahi deta\"), even with "
-                        "inconsistent or phonetic spelling. \"urdu_script\" means written "
-                        "in Urdu/Arabic script. Otherwise use \"english\"."
+                        '"english_query": "<the core question content only, in plain English>"}. '
+                        "\n\n"
+                        "STEP 1 — pick \"language\" (which language the REPLY should be in):\n"
+                        "- First check whether the user explicitly asked for a specific reply "
+                        "language anywhere in their message — phrases like 'in Urdu', 'in "
+                        "English', 'in Roman Urdu', 'urdu mein', 'urdu mein batao', 'jawab "
+                        "urdu mein dein', 'reply in english', 'roman urdu mein'. If such a "
+                        "request is present, \"language\" MUST be that requested language, "
+                        "REGARDLESS of what script/language the rest of the message itself is "
+                        "written in. An explicit request always overrides the message's own "
+                        "language.\n"
+                        "- If there is no explicit request, then \"language\" is simply "
+                        "whichever language/script the message itself is written in: "
+                        "\"roman_urdu\" for Urdu words spelled out in Latin/English letters "
+                        "(e.g. \"mera shohar kharcha nahi deta\"), even with inconsistent or "
+                        "phonetic spelling; \"urdu_script\" for actual Urdu/Arabic script; "
+                        "otherwise \"english\".\n\n"
+                        "STEP 2 — build \"english_query\":\n"
+                        "This is ONLY the actual question/topic content, translated into "
+                        "plain English, for a search index. Strip out any meta-instruction "
+                        "about which language to reply in (e.g. \"tell me about zakat in "
+                        "urdu\" -> english_query should just be \"tell me about zakat\", not "
+                        "mention Urdu at all)."
                     ),
                 },
                 {"role": "user", "content": user_question},
