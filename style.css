@@ -169,6 +169,13 @@ html, body {
 .header-btn:hover  { background-color: rgba(245, 243, 241, 0.1); }
 .header-btn:active { background-color: rgba(245, 243, 241, 0.2); }
 
+/* Ensure speaker icons fully hide when the [hidden] attribute is set.
+   SVG elements don't reliably honour the HTML hidden attribute's default
+   display:none across browsers, so we enforce it explicitly. */
+#speaker-toggle svg[hidden] {
+  display: none !important;
+}
+
 /* ==========================================================================
    CHAT AREA
    ========================================================================== */

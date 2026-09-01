@@ -517,12 +517,12 @@ function toggleSpeaker() {
   voiceEnabled = !voiceEnabled;
 
   if (voiceEnabled) {
-    speakerOnIcon.hidden  = false;
-    speakerOffIcon.hidden = true;
+    speakerOnIcon.removeAttribute("hidden");
+    speakerOffIcon.setAttribute("hidden", "");
     speakerToggle.setAttribute("aria-label", "Mute voice replies");
   } else {
-    speakerOnIcon.hidden  = true;
-    speakerOffIcon.hidden = false;
+    speakerOnIcon.setAttribute("hidden", "");
+    speakerOffIcon.removeAttribute("hidden");
     speakerToggle.setAttribute("aria-label", "Unmute voice replies");
     // Stop any ongoing speech immediately
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
