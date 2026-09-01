@@ -9,14 +9,32 @@
  *  - Voice output via browser SpeechSynthesis (auto-reads bot replies)
  *  - Typing indicator while waiting for the backend
  *  - Graceful fallback if speech APIs are unavailable
- *  - Privacy-by-default: nothing is stored or logged client-side
+ *  - Guests: nothing is stored or logged client-side (privacy-by-default)
+ *  - Logged-in users: left sidebar with "New chat" + chat history
+ *
+ * CHAT HISTORY — PLACEHOLDER ONLY, NOT YET WIRED TO A BACKEND
+ *  The sidebar's history list, save, and load logic below (see SIDEBAR /
+ *  CHAT HISTORY section) currently just holds chats in an in-memory array
+ *  (`allChatsPlaceholder`). It is NOT persisted anywhere — a page reload
+ *  clears it, same as a guest's chat. This is intentional: it exists so
+ *  the UI is demoable and the real logic can be dropped in later without
+ *  restructuring the rest of the file. Every spot that needs real backend
+ *  calls (save chat, list chats, load one chat) is marked "TODO(backend)".
+ *
+ * LOGIN STATE
+ *  auth.html is expected to set localStorage["panah_logged_in"] = "1"
+ *  (and optionally "panah_user_label" with a display name/phone) on
+ *  successful OTP verification, then redirect back here. This file reads
+ *  that flag on load to decide whether to show the sidebar or the
+ *  guest login button. This part IS real/kept as-is — only chat history
+ *  storage was pulled back out.
  *
  * EXTENSION POINTS (for teammates)
  *  - Add a settings screen: wire up a gear icon in the header and
  *    create a modal overlay; persist prefs in sessionStorage only.
  *  - Add a language switch: swap SPEECH_LANG and update placeholder text.
  *
- * @version 1.1.0
+ * @version 1.3.0
  */
 
 /* ===================================================================
@@ -46,29 +64,48 @@ const MIC_LANGUAGES = {
   en: "en-US",
 };
 
-/** Welcome message shown when the page first loads. */
+/** Welcome message shown when a fresh chat starts. */
 const WELCOME_MESSAGE =
   "Assalamu Alaikum! Main Panah hoon — aapka mahfooz sahara. " +
   "Aap mujhse mehr, nafaqa, zakat, wirasat ya kisi bhi maali haq ke baare mein " +
   "poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein. " +
   "Aapki baat bilkul mehfooz hai — kuch bhi save nahi hota.";
 
+/** Welcome message variant for logged-in users (storage note differs). */
+const WELCOME_MESSAGE_LOGGED_IN =
+  "Assalamu Alaikum! Main Panah hoon — aapka mahfooz sahara. " +
+  "Aap mujhse mehr, nafaqa, zakat, wirasat ya kisi bhi maali haq ke baare mein " +
+  "poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein.";
+
+/** localStorage keys — login state only. Chat history is NOT stored here. */
+const LS_LOGIN_FLAG   = "panah_logged_in";
+const LS_USER_LABEL   = "panah_user_label";
+
 /* ===================================================================
    2. DOM REFERENCES
    =================================================================== */
 
-const chatArea        = document.getElementById("chat-area");
-const messageInput    = document.getElementById("message-input");
-const sendBtn         = document.getElementById("send-btn");
-const micBtn          = document.getElementById("mic-btn");
-const speakerToggle   = document.getElementById("speaker-toggle");
-const speakerOnIcon   = document.getElementById("speaker-on-icon");
-const speakerOffIcon  = document.getElementById("speaker-off-icon");
-const typingHeader    = document.getElementById("typing-indicator-header");
-const subtitleText    = document.getElementById("subtitle-text");
+const chatArea         = document.getElementById("chat-area");
+const messageInput     = document.getElementById("message-input");
+const sendBtn          = document.getElementById("send-btn");
+const micBtn           = document.getElementById("mic-btn");
+const speakerToggle    = document.getElementById("speaker-toggle");
+const speakerOnIcon    = document.getElementById("speaker-on-icon");
+const speakerOffIcon   = document.getElementById("speaker-off-icon");
+const typingHeader     = document.getElementById("typing-indicator-header");
+const subtitleText     = document.getElementById("subtitle-text");
+const continueLink     = document.getElementById("continue-link");
+
+const sidebar           = document.getElementById("sidebar");
+const sidebarToggleBtn  = document.getElementById("sidebar-toggle-btn");
+const sidebarOverlay    = document.getElementById("sidebar-overlay");
+const newChatBtn        = document.getElementById("new-chat-btn");
+const historyListEl     = document.getElementById("chat-history-list");
+const sidebarProfileLbl = document.getElementById("sidebar-profile-label");
+const logoutBtn         = document.getElementById("logout-btn");
 
 /* ===================================================================
-   3. APPLICATION STATE  (in-memory only — never persisted)
+   3. APPLICATION STATE
    =================================================================== */
 
 /** Whether the bot voice output is currently enabled. */
@@ -85,20 +122,35 @@ let isListening = false;
 
 /**
  * Which language the mic should listen in: "ur" or "en".
- * Defaults to "ur" since Urdu/Roman Urdu is the primary language for this
- * app's users — English is the exception, toggled on deliberately.
  */
 let micLanguage = "ur";
+
+/** Whether the current visitor is logged in (read once at init). */
+let isLoggedIn = false;
+
+/**
+ * In-memory transcript of the CURRENT chat only.
+ * Guests: this is never written to storage.
+ * Logged-in users: persisted to the in-memory placeholder store on each turn.
+ * Each entry: { text, sender: "user"|"bot", time: ISOString }
+ */
+let currentMessages = [];
+
+/** id of the chat currently open, or null until the first message is sent. */
+let currentChatId = null;
+
+/**
+ * PLACEHOLDER chat store — in-memory only, lost on reload.
+ * TODO(backend): replace this array with real fetch() calls to a
+ * save/list/load-chat API once it exists, keyed by the logged-in user.
+ * Shape stays the same either way: { id, title, messages, updatedAt }
+ */
+let allChatsPlaceholder = [];
 
 /* ===================================================================
    4. UTILITY HELPERS
    =================================================================== */
 
-/**
- * Returns a 12-hour format timestamp string (e.g. "3:45 PM").
- * @param {Date} [date=new Date()]
- * @returns {string}
- */
 function formatTime(date = new Date()) {
   let hours = date.getHours();
   const mins = date.getMinutes().toString().padStart(2, "0");
@@ -107,53 +159,32 @@ function formatTime(date = new Date()) {
   return `${hours}:${mins} ${ampm}`;
 }
 
-/**
- * Creates a safe text node — never uses innerHTML with user/backend text.
- * This prevents XSS even if the backend returns unexpected HTML.
- * @param {string} text
- * @returns {Text}
- */
 function safeText(text) {
   return document.createTextNode(String(text));
 }
 
-/**
- * Sanitizes a string for safe inclusion in a DOM attribute or text node.
- * Strips leading/trailing whitespace and caps length.
- * @param {string} str
- * @param {number} [maxLen=MAX_QUESTION_LENGTH]
- * @returns {string}
- */
 function sanitizeInput(str, maxLen = MAX_QUESTION_LENGTH) {
   if (typeof str !== "string") return "";
   return str.trim().slice(0, maxLen);
+}
+
+function generateChatId() {
+  return "chat_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 }
 
 /* ===================================================================
    5. MESSAGE RENDERING
    =================================================================== */
 
-/**
- * Appends a chat bubble to the chat area.
- * Uses textContent (not innerHTML) for safety.
- *
- * @param {string}  text     - The message body.
- * @param {"user"|"bot"} sender - Who sent the message.
- * @param {Date}    [time]   - Optional timestamp.
- */
-function appendMessage(text, sender, time = new Date()) {
-  // Outer row (controls alignment)
+function appendMessage(text, sender, time = new Date(), { record = true } = {}) {
   const row = document.createElement("div");
   row.className = `msg-row ${sender}`;
 
-  // Bubble
   const bubble = document.createElement("div");
   bubble.className = "msg-bubble";
 
-  // Message text — safe text node, never innerHTML
   bubble.appendChild(safeText(text));
 
-  // Timestamp
   const ts = document.createElement("span");
   ts.className = "msg-time";
   ts.textContent = formatTime(time);
@@ -162,22 +193,20 @@ function appendMessage(text, sender, time = new Date()) {
   row.appendChild(bubble);
   chatArea.appendChild(row);
 
-  // Auto-scroll to bottom
   requestAnimationFrame(() => {
     chatArea.scrollTop = chatArea.scrollHeight;
   });
+
+  if (record) {
+    currentMessages.push({ text, sender, time: time.toISOString() });
+    if (isLoggedIn) saveCurrentChat();
+  }
 }
 
-/**
- * Shows the typing indicator bubble (three bouncing dots) in the chat area
- * and the header subtitle area.
- */
 function showTypingIndicator() {
-  // Header indicator
   typingHeader.hidden = false;
   subtitleText.style.display = "none";
 
-  // Chat-area bubble
   const row = document.createElement("div");
   row.className = "msg-row bot";
   row.id = "typing-bubble-row";
@@ -199,9 +228,6 @@ function showTypingIndicator() {
   });
 }
 
-/**
- * Removes the typing indicator from both the chat area and the header.
- */
 function hideTypingIndicator() {
   typingHeader.hidden = true;
   subtitleText.style.display = "";
@@ -214,13 +240,6 @@ function hideTypingIndicator() {
    6. BACKEND API CALLS
    =================================================================== */
 
-/**
- * Sends a question to the Flask /ask endpoint and returns the response JSON.
- * Includes a timeout via AbortController.
- *
- * @param {string} question - The user's question (already sanitized).
- * @returns {Promise<{answer: string, matched_topic: string|null, matched_question: string|null, sources: string[]}>}
- */
 async function askBackend(question) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -245,10 +264,6 @@ async function askBackend(question) {
   }
 }
 
-/**
- * Pings the /health endpoint.  Returns true if the backend is reachable.
- * (Currently unused — reserved for a future "connection status" indicator.)
- */
 async function checkHealth() {
   try {
     const res = await fetch(`${API_BASE}/health`, { method: "GET" });
@@ -262,32 +277,24 @@ async function checkHealth() {
    7. SEND MESSAGE FLOW
    =================================================================== */
 
-/**
- * Handles the full "user sends a message" flow:
- *  1. Validate & sanitize input
- *  2. Render user bubble
- *  3. Show typing indicator
- *  4. Call backend
- *  5. Render bot reply (or error message)
- *  6. Optionally speak the reply aloud
- */
 async function handleSend() {
-  // Prevent double-sends while waiting
   if (isWaiting) return;
 
   const rawInput = messageInput.value;
   const question = sanitizeInput(rawInput);
 
-  // Ignore empty questions
   if (!question) return;
 
-  // Clear input immediately
   messageInput.value = "";
 
-  // Render user bubble
+  // First message of a brand-new chat: assign it an id now so it can be
+  // saved and shown in the sidebar history.
+  if (isLoggedIn && !currentChatId) {
+    currentChatId = generateChatId();
+  }
+
   appendMessage(question, "user");
 
-  // Lock UI and show typing
   isWaiting = true;
   sendBtn.disabled = true;
   showTypingIndicator();
@@ -297,7 +304,6 @@ async function handleSend() {
 
     hideTypingIndicator();
 
-    // Validate the answer field exists and is a string
     const answer =
       data && typeof data.answer === "string"
         ? data.answer
@@ -305,14 +311,12 @@ async function handleSend() {
 
     appendMessage(answer, "bot");
 
-    // Speak the reply if voice is enabled
     if (voiceEnabled) {
       speakText(answer);
     }
   } catch (err) {
     hideTypingIndicator();
 
-    // Friendly error message in Urdu — never expose raw error details
     const errorMsg =
       "Maazrat, is waqt connect nahi ho pa raha. Barah-e-karam dobara koshish karein.";
     appendMessage(errorMsg, "bot");
@@ -331,24 +335,16 @@ async function handleSend() {
    8. SPEECH SYNTHESIS  (Text-to-Speech — bot reads replies aloud)
    =================================================================== */
 
-/**
- * Speaks the given text aloud using the browser's SpeechSynthesis API.
- * Selects an Urdu voice if available; falls back to the default voice.
- *
- * @param {string} text - The text to speak.
- */
 function speakText(text) {
   if (!("speechSynthesis" in window)) return;
 
-  // Cancel any ongoing speech to avoid overlap
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = SPEECH_LANG;
-  utterance.rate = 0.95;   // Slightly slower for clarity
+  utterance.rate = 0.95;
   utterance.pitch = 1.0;
 
-  // Try to pick an Urdu voice
   const voices = window.speechSynthesis.getVoices();
   const urduVoice = voices.find(
     (v) => v.lang === SPEECH_LANG || v.lang.startsWith("ur")
@@ -358,12 +354,8 @@ function speakText(text) {
   window.speechSynthesis.speak(utterance);
 }
 
-/**
- * Pre-loads voices (some browsers load them asynchronously).
- */
 function initVoices() {
   if ("speechSynthesis" in window) {
-    // Chrome loads voices async; this event fires once they're ready.
     window.speechSynthesis.onvoiceschanged = () => {
       /* voices are now available for speakText() */
     };
@@ -374,34 +366,23 @@ function initVoices() {
    9. SPEECH RECOGNITION  (Speech-to-Text — user speaks their question)
    =================================================================== */
 
-/**
- * Initialises the SpeechRecognition API.
- * Returns the recognition instance, or null if unsupported.
- *
- * NOTE: rec.lang is no longer hardcoded here — it's set fresh each time
- * listening starts (see toggleMic), based on the current micLanguage state,
- * since the API only supports one language per session and can't switch
- * mid-recording.
- */
 function initSpeechRecognition() {
   const SR =
     window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
   if (!SR) {
-    // Browser doesn't support speech recognition — hide the mic button
     micBtn.style.display = "none";
     micBtn.setAttribute("aria-hidden", "true");
     return null;
   }
 
   const rec = new SR();
-  rec.interimResults = false;   // We only want the final transcript
+  rec.interimResults = false;
   rec.maxAlternatives = 1;
   rec.continuous = false;
 
   rec.addEventListener("result", (event) => {
     const transcript = event.results[0][0].transcript;
-    // Put the recognised text into the input field
     messageInput.value = sanitizeInput(transcript);
   });
 
@@ -419,11 +400,6 @@ function initSpeechRecognition() {
   return rec;
 }
 
-/**
- * Toggles the microphone on/off.
- * Sets recognition.lang from the current micLanguage state right before
- * starting, since the language can't be changed while listening is active.
- */
 function toggleMic() {
   if (!recognition) return;
 
@@ -439,7 +415,6 @@ function toggleMic() {
       micBtn.classList.add("recording");
       micBtn.setAttribute("aria-label", "Stop listening");
     } catch {
-      // Already started or other error — reset state
       isListening = false;
       micBtn.classList.remove("recording");
     }
@@ -450,15 +425,6 @@ function toggleMic() {
    9b. MIC LANGUAGE TOGGLE  (switch mic between Urdu and English)
    =================================================================== */
 
-/**
- * Creates the small UR/EN toggle button next to the mic and inserts it
- * into the DOM. Built and styled inline in JS (rather than relying on
- * index.html/style.css markup that may not exist yet) so this feature is
- * self-contained and doesn't require edits to the other two files.
- *
- * @returns {HTMLButtonElement|null} the created button, or null if the
- *   mic button itself isn't present (e.g. speech recognition unsupported).
- */
 function createMicLanguageToggle() {
   if (!micBtn || !micBtn.parentNode) return null;
 
@@ -468,9 +434,6 @@ function createMicLanguageToggle() {
   btn.setAttribute("aria-label", "Switch microphone language");
   btn.title = "Switch microphone language (Urdu / English)";
 
-  // Minimal inline styling so it doesn't depend on style.css rules that
-  // may not exist for it. Kept small and unobtrusive, matching the
-  // existing WhatsApp-style green accent already used elsewhere.
   Object.assign(btn.style, {
     marginInlineStart: "6px",
     padding: "2px 8px",
@@ -496,11 +459,6 @@ function createMicLanguageToggle() {
   return btn;
 }
 
-/**
- * Updates the toggle button's label/title to reflect the current
- * micLanguage state.
- * @param {HTMLButtonElement} btn
- */
 function updateMicLanguageToggleLabel(btn) {
   const isUrdu = micLanguage === "ur";
   btn.textContent = isUrdu ? "UR" : "EN";
@@ -524,19 +482,188 @@ function toggleSpeaker() {
     speakerOnIcon.setAttribute("hidden", "");
     speakerOffIcon.removeAttribute("hidden");
     speakerToggle.setAttribute("aria-label", "Unmute voice replies");
-    // Stop any ongoing speech immediately
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }
 }
 
 /* ===================================================================
-   11. EVENT LISTENERS
+   11. SIDEBAR / LOGIN STATE / CHAT HISTORY
    =================================================================== */
 
-// --- Send button click ---
+/**
+ * Reads all saved chats for the logged-in user.
+ * TODO(backend): replace with e.g. `await fetch(`${API_BASE}/chats`)`
+ * and return the parsed JSON list instead of the in-memory array.
+ */
+function loadAllChats() {
+  return allChatsPlaceholder;
+}
+
+/**
+ * Persists the full chat list.
+ * TODO(backend): replace with a real save call — likely per-chat
+ * (`POST /chats` / `PUT /chats/:id`) rather than resending the whole
+ * list every time, once that endpoint exists.
+ */
+function saveAllChats(chats) {
+  allChatsPlaceholder = chats;
+}
+
+/** Derives a short title from the first user message in a chat. */
+function deriveChatTitle(messages) {
+  const firstUser = messages.find((m) => m.sender === "user");
+  const base = firstUser ? firstUser.text : "Nayi guftagu";
+  return base.length > 40 ? base.slice(0, 40) + "…" : base;
+}
+
+/** Upserts the current in-progress chat into the placeholder store. */
+function saveCurrentChat() {
+  if (!currentChatId || currentMessages.length === 0) return;
+
+  const chats = loadAllChats();
+  const existingIndex = chats.findIndex((c) => c.id === currentChatId);
+  const chatRecord = {
+    id: currentChatId,
+    title: deriveChatTitle(currentMessages),
+    messages: currentMessages,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existingIndex >= 0) {
+    chats[existingIndex] = chatRecord;
+  } else {
+    chats.unshift(chatRecord);
+  }
+
+  saveAllChats(chats);
+  renderHistoryList();
+}
+
+/** Renders the sidebar's chat history list from the placeholder store. */
+function renderHistoryList() {
+  if (!historyListEl) return;
+
+  const chats = loadAllChats().sort(
+    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+  );
+
+  historyListEl.innerHTML = "";
+
+  if (chats.length === 0) {
+    const note = document.createElement("p");
+    note.className = "sidebar-empty-note";
+    note.textContent = "Abhi tak koi guftagu save nahi hui.";
+    historyListEl.appendChild(note);
+    return;
+  }
+
+  chats.forEach((chat) => {
+    const li = document.createElement("li");
+    li.className = "history-item";
+    li.dataset.chatId = chat.id;
+    li.textContent = chat.title;
+    if (chat.id === currentChatId) li.classList.add("active");
+    li.addEventListener("click", () => openChat(chat.id));
+    historyListEl.appendChild(li);
+  });
+}
+
+/** Loads a previously saved chat into the chat area. */
+function openChat(chatId) {
+  const chats = loadAllChats();
+  const chat = chats.find((c) => c.id === chatId);
+  if (!chat) return;
+
+  currentChatId = chat.id;
+  currentMessages = [...chat.messages];
+
+  chatArea.innerHTML = "";
+  currentMessages.forEach((m) => {
+    appendMessage(m.text, m.sender, new Date(m.time), { record: false });
+  });
+
+  renderHistoryList();
+  closeSidebarDrawer();
+}
+
+/** Starts a fresh, empty chat (saving the previous one first, if any). */
+function startNewChat() {
+  if (isLoggedIn && currentChatId && currentMessages.length > 0) {
+    saveCurrentChat();
+  }
+
+  currentChatId = null;
+  currentMessages = [];
+  chatArea.innerHTML = "";
+
+  const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
+  appendMessage(greeting, "bot", new Date(), { record: false });
+
+  renderHistoryList();
+  closeSidebarDrawer();
+  messageInput.focus();
+}
+
+/** Opens the sidebar drawer (mobile) — no-op on desktop where it's static. */
+function openSidebarDrawer() {
+  if (!sidebar) return;
+  sidebar.classList.add("open");
+  if (sidebarOverlay) sidebarOverlay.hidden = false;
+}
+
+function closeSidebarDrawer() {
+  if (!sidebar) return;
+  sidebar.classList.remove("open");
+  if (sidebarOverlay) sidebarOverlay.hidden = true;
+}
+
+function toggleSidebarDrawer() {
+  if (!sidebar) return;
+  if (sidebar.classList.contains("open")) {
+    closeSidebarDrawer();
+  } else {
+    openSidebarDrawer();
+  }
+}
+
+/** Logs the user out: clears the login flag and returns to guest view. */
+function handleLogout() {
+  localStorage.removeItem(LS_LOGIN_FLAG);
+  localStorage.removeItem(LS_USER_LABEL);
+  window.location.reload();
+}
+
+/**
+ * Applies the logged-in vs. guest UI state on load:
+ *  - Guest: sidebar + its toggle stay hidden, "Log in" button shows.
+ *  - Logged in: sidebar shows (persistent on desktop, drawer on mobile),
+ *    the login button is hidden, and saved chat history is rendered.
+ */
+function initLoginState() {
+  isLoggedIn = localStorage.getItem(LS_LOGIN_FLAG) === "1";
+
+  if (isLoggedIn) {
+    if (sidebar) sidebar.hidden = false;
+    if (sidebarToggleBtn) sidebarToggleBtn.hidden = false;
+    if (continueLink) continueLink.hidden = true;
+
+    const label = localStorage.getItem(LS_USER_LABEL);
+    if (sidebarProfileLbl && label) sidebarProfileLbl.textContent = label;
+
+    renderHistoryList();
+  } else {
+    if (sidebar) sidebar.hidden = true;
+    if (sidebarToggleBtn) sidebarToggleBtn.hidden = true;
+    if (continueLink) continueLink.hidden = false;
+  }
+}
+
+/* ===================================================================
+   12. EVENT LISTENERS
+   =================================================================== */
+
 sendBtn.addEventListener("click", handleSend);
 
-// --- Enter key in input field ---
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -544,48 +671,45 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
-// --- Mic button click ---
 micBtn.addEventListener("click", toggleMic);
-
-// --- Speaker toggle ---
 speakerToggle.addEventListener("click", toggleSpeaker);
 
-// --- Stop speech synthesis when the page is hidden (background tab) ---
+if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
+if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
+if (sidebarToggleBtn) sidebarToggleBtn.addEventListener("click", toggleSidebarDrawer);
+if (sidebarOverlay) sidebarOverlay.addEventListener("click", closeSidebarDrawer);
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && "speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }
 });
 
-// --- Clean up speech on page unload ---
 window.addEventListener("beforeunload", () => {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (isLoggedIn) saveCurrentChat();
 });
 
 /* ===================================================================
-   12. INITIALISATION  (runs on page load)
+   13. INITIALISATION  (runs on page load)
    =================================================================== */
 
 (function init() {
-  // Initialise speech systems
   initVoices();
   recognition = initSpeechRecognition();
 
-  // Only add the language toggle if speech recognition is actually
-  // supported (initSpeechRecognition hides micBtn entirely otherwise).
   if (recognition) {
     createMicLanguageToggle();
   }
 
-  // Show the welcome greeting from the bot
-  appendMessage(WELCOME_MESSAGE, "bot");
+  initLoginState();
 
-  // Speak the greeting if voice is on
-  // Small delay so voices have time to load in some browsers
+  const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
+  appendMessage(greeting, "bot", new Date(), { record: false });
+
   setTimeout(() => {
-    if (voiceEnabled) speakText(WELCOME_MESSAGE);
+    if (voiceEnabled) speakText(greeting);
   }, 600);
 
-  // Focus the input
   messageInput.focus();
 })();
