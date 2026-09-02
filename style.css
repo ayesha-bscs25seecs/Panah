@@ -15,8 +15,9 @@
   --copper:   #b4866c;
   --teal:     #1f3e43;
   --gray:     #787570;
-  --maroon:   #5b2c36;
-  --wa-green: #dcf8c6;
+  --maroon:         #5b2c36;
+  --secondary-teal: #142f33;
+  --wa-green:       #dcf8c6;
   --white:    #ffffff;
   --danger:   #c0392b;
 
@@ -345,6 +346,53 @@ html, body {
 .header-btn:active { background-color: rgba(245, 243, 241, 0.2); }
 .header-btn[hidden] { display: none !important; }
 
+/* Back/home link in the chat header */
+.header-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--cream);
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+.header-back:hover  { background-color: rgba(245, 243, 241, 0.1); }
+.header-back:active { background-color: rgba(245, 243, 241, 0.2); }
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-logo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Speaker toggle with visible text label on larger screens */
+.speaker-btn {
+  gap: 6px;
+  padding: 6px 10px 6px 8px;
+  border-radius: 999px;
+}
+
+.speaker-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+@media (max-width: 599px) {
+  .speaker-label { display: none; }
+}
+
 /* Ensure speaker icons fully hide when the [hidden] attribute is set.
    SVG elements don't reliably honour the HTML hidden attribute's default
    display:none across browsers, so we enforce it explicitly. */
@@ -397,18 +445,19 @@ html, body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* User bubble — WhatsApp green */
+/* User bubble — warm copper/tan */
 .msg-row.user .msg-bubble {
-  background-color: var(--wa-green);
-  color: var(--teal);
+  background-color: var(--copper);
+  color: var(--cream);
   border-top-right-radius: 2px;   /* "tail" corner */
 }
 
-/* Bot bubble — white */
+/* Bot bubble — soft neutral card */
 .msg-row.bot .msg-bubble {
   background-color: var(--white);
-  color: #2c2c2c;
+  color: var(--teal);
   border-top-left-radius: 2px;    /* "tail" corner */
+  border: 1px solid rgba(31, 62, 67, 0.08);
 }
 
 /* Timestamp inside bubble */
@@ -516,6 +565,13 @@ html, body {
 }
 
 /* Mic button active state (recording) */
+#mic-btn {
+  width: 42px;
+  height: 42px;
+  color: var(--teal);
+}
+#mic-btn:hover { background-color: rgba(31, 62, 67, 0.08); }
+
 #mic-btn.recording {
   color: var(--danger);
   background-color: rgba(192, 57, 43, 0.1);
@@ -526,6 +582,53 @@ html, body {
   0%   { box-shadow: 0 0 0 0   rgba(192, 57, 43, 0.4); }
   70%  { box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);   }
   100% { box-shadow: 0 0 0 0   rgba(192, 57, 43, 0);   }
+}
+
+/* ==========================================================================
+   SUGGESTED QUESTION CHIPS
+   ========================================================================== */
+#suggested-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px 10px;
+  background-color: var(--cream);
+  border-top: 1px solid rgba(31, 62, 67, 0.08);
+  flex-shrink: 0;
+}
+
+#suggested-chips[hidden] {
+  display: none !important;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 62, 67, 0.15);
+  background-color: var(--white);
+  color: var(--teal);
+  font-family: var(--font-base);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.chip:hover  { background-color: rgba(180, 134, 108, 0.12); border-color: var(--copper); }
+.chip:active { transform: scale(0.96); }
+
+.chip-topic {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background-color: rgba(180, 134, 108, 0.2);
+  color: var(--maroon);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* ==========================================================================

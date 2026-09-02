@@ -50,6 +50,13 @@ const REQUEST_TIMEOUT_MS = 15000;
 /** Maximum characters allowed per question. */
 const MAX_QUESTION_LENGTH = 500;
 
+/** Suggested question chips shown above the input for quick exploration. */
+const SUGGESTED_QUESTIONS = [
+  { topic: "Mehr",  text: "Mera haq mehr kya hai?" },
+  { topic: "Nafaqa", text: "Mere shohar mujhe kharcha nahi dete, main kya karun?" },
+  { topic: "Scam",   text: "Kisi ne mujhe prize jeetne ka message bheja hai, kya yeh jhooth hai?" },
+];
+
 /** Language code for speech OUTPUT (bot reading replies aloud). Unchanged. */
 const SPEECH_LANG = "ur-PK";
 
@@ -95,6 +102,7 @@ const speakerOffIcon   = document.getElementById("speaker-off-icon");
 const typingHeader     = document.getElementById("typing-indicator-header");
 const subtitleText     = document.getElementById("subtitle-text");
 const continueLink     = document.getElementById("continue-link");
+const suggestedChips   = document.getElementById("suggested-chips");
 
 const sidebar           = document.getElementById("sidebar");
 const sidebarToggleBtn  = document.getElementById("sidebar-toggle-btn");
@@ -254,11 +262,14 @@ async function askBackend(question) {
 
     clearTimeout(timer);
 
-    if (!response.ok) {
-      throw new Error(`Backend returned status ${response.status}`);
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
     }
 
-    return await response.json();
+    return { ok: response.ok, status: response.status, data };
   } finally {
     clearTimeout(timer);
   }
@@ -294,20 +305,30 @@ async function handleSend() {
   }
 
   appendMessage(question, "user");
+  setSuggestedChipsVisible(false);
 
   isWaiting = true;
   sendBtn.disabled = true;
   showTypingIndicator();
 
   try {
-    const data = await askBackend(question);
+    const { ok, status, data } = await askBackend(question);
 
     hideTypingIndicator();
 
-    const answer =
-      data && typeof data.answer === "string"
-        ? data.answer
-        : "Jawab daryaft nahi ho saka. Dobara koshish karein.";
+    let answer;
+    if (ok) {
+      answer =
+        data && typeof data.answer === "string"
+          ? data.answer
+          : "Jawab daryaft nahi ho saka. Dobara koshish karein.";
+    } else if (status === 502 && data && typeof data.fallback_answer === "string") {
+      // LLM call failed, but the backend returned the verified KB answer.
+      answer = data.fallback_answer;
+    } else {
+      // 400 or another server error — surface a friendly retry message.
+      throw new Error("Backend error");
+    }
 
     appendMessage(answer, "bot");
 
@@ -318,7 +339,9 @@ async function handleSend() {
     hideTypingIndicator();
 
     const errorMsg =
-      "Maazrat, is waqt connect nahi ho pa raha. Barah-e-karam dobara koshish karein.";
+      err && err.name === "AbortError"
+        ? "Waqt khatam ho gaya. Barah-e-karam dobara koshish karein."
+        : "Maazrat, is waqt connect nahi ho pa raha. Barah-e-karam dobara koshish karein.";
     appendMessage(errorMsg, "bot");
 
     if (voiceEnabled) {
@@ -329,6 +352,44 @@ async function handleSend() {
     sendBtn.disabled = false;
     messageInput.focus();
   }
+}
+
+/* ===================================================================
+   7b. SUGGESTED QUESTION CHIPS
+   =================================================================== */
+
+function renderSuggestedChips() {
+  if (!suggestedChips) return;
+
+  suggestedChips.innerHTML = "";
+  SUGGESTED_QUESTIONS.forEach(({ topic, text }) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.setAttribute("aria-label", `Suggested question: ${text}`);
+
+    const topicBadge = document.createElement("span");
+    topicBadge.className = "chip-topic";
+    topicBadge.textContent = topic;
+
+    const label = document.createElement("span");
+    label.textContent = text;
+
+    chip.appendChild(topicBadge);
+    chip.appendChild(label);
+
+    chip.addEventListener("click", () => {
+      messageInput.value = text;
+      handleSend();
+    });
+
+    suggestedChips.appendChild(chip);
+  });
+}
+
+function setSuggestedChipsVisible(visible) {
+  if (!suggestedChips) return;
+  suggestedChips.hidden = !visible;
 }
 
 /* ===================================================================
@@ -582,6 +643,7 @@ function openChat(chatId) {
     appendMessage(m.text, m.sender, new Date(m.time), { record: false });
   });
 
+  setSuggestedChipsVisible(false);
   renderHistoryList();
   closeSidebarDrawer();
 }
@@ -599,6 +661,8 @@ function startNewChat() {
   const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
   appendMessage(greeting, "bot", new Date(), { record: false });
 
+  renderSuggestedChips();
+  setSuggestedChipsVisible(true);
   renderHistoryList();
   closeSidebarDrawer();
   messageInput.focus();
@@ -703,6 +767,7 @@ window.addEventListener("beforeunload", () => {
   }
 
   initLoginState();
+  renderSuggestedChips();
 
   const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
   appendMessage(greeting, "bot", new Date(), { record: false });
