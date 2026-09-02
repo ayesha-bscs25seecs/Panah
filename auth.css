@@ -91,6 +91,23 @@ html, body.auth-body {
   line-height: 1.4;
 }
 
+/* ---------- Inline error message (shown above the forms on failure) ---------- */
+.auth-error-note {
+  font-size: 0.82rem;
+  color: var(--maroon);
+  background-color: rgba(91, 44, 54, 0.08);
+  border: 1px solid rgba(91, 44, 54, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+/* ---------- "Code sent to +92..." note above the OTP field ---------- */
+#otp-sent-to-note {
+  margin-bottom: 16px;
+}
+
 /* ---------- Form ---------- */
 .auth-label {
   display: block;
@@ -162,6 +179,26 @@ html, body.auth-body {
 }
 .continue-btn:hover { background-color: #17333a; }
 .continue-btn:active { background-color: #0f2428; }
+.continue-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Secondary text-style button ("Use a different number") ---------- */
+.link-btn {
+  margin-top: 14px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-size: 0.85rem;
+  font-family: var(--font-base);
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: center;
+  padding: 4px;
+}
+.link-btn:hover { color: var(--teal); }
 
 .auth-footnote {
   margin-top: 16px;

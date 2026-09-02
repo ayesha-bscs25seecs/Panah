@@ -1,8 +1,13 @@
 """
 app.py — Panah Flask backend.
 
-Single endpoint: POST /ask
-Body:  { "question": "mera shohar mujhe kharcha nahi deta" }
+Endpoints:
+  POST /ask             — KB-grounded chatbot reply (unchanged, see below)
+  POST /verify-session   — verifies a Firebase phone-auth ID token and
+                            creates/finds the user record by phone number
+  GET  /health           — status check
+
+/ask Body:  { "question": "mera shohar mujhe kharcha nahi deta" }
 Reply: {
     "answer": "...",              # final Urdu answer from the LLM
     "matched_topic": "nafaqa",    # for debugging/demo purposes
@@ -21,7 +26,8 @@ Flow:
 
 Run locally:
     export DASHSCOPE_API_KEY="your-key-here"
-    pip install flask openai flask-cors --break-system-packages
+    export GOOGLE_APPLICATION_CREDENTIALS="./firebase-service-account.json"
+    pip install flask openai flask-cors firebase-admin --break-system-packages
     python app.py
 """
 
@@ -32,6 +38,10 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
+
+import firebase_admin
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
 
 from retrieval import kb
 
@@ -63,6 +73,71 @@ else:
         "DASHSCOPE_API_KEY not set — /ask will return retrieval results "
         "without an LLM-generated response. Set the env var to enable full replies."
     )
+
+# --- Firebase Admin setup ----------------------------------------------------
+# Needs a service account key JSON downloaded from Firebase Console >
+# Project settings > Service accounts > Generate new private key.
+# Point GOOGLE_APPLICATION_CREDENTIALS at that file's path, or hardcode the
+# path below. NEVER commit that file to git.
+FIREBASE_CREDENTIALS_PATH = os.environ.get(
+    "GOOGLE_APPLICATION_CREDENTIALS", "./firebase-service-account.json"
+)
+
+firebase_app = None
+if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+    firebase_app = firebase_admin.initialize_app(cred)
+else:
+    logger.warning(
+        "Firebase service account file not found at %s — /verify-session "
+        "will reject all requests until this is set up.",
+        FIREBASE_CREDENTIALS_PATH,
+    )
+
+# --- User store --------------------------------------------------------------
+# PLACEHOLDER: plain in-memory dict, keyed by E.164 phone number.
+# This is fine for a hackathon demo but resets on every server restart —
+# same caveat as script.js's chat-history placeholder. Swap for a real DB
+# (SQLite is enough to start) before treating this as a real launch, ideally
+# at the same time chat history gets wired to a real backend too, since both
+# will end up keyed by this same user record.
+users_by_phone = {}
+
+
+@app.route("/verify-session", methods=["POST"])
+def verify_session():
+    if firebase_app is None:
+        return jsonify({
+            "error": "Firebase Admin not configured on the server. "
+                     "Set GOOGLE_APPLICATION_CREDENTIALS to your service account JSON.",
+        }), 500
+
+    data = request.get_json(silent=True) or {}
+    id_token = data.get("idToken")
+
+    if not id_token:
+        return jsonify({"error": "Missing 'idToken' in request body."}), 400
+
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+    except Exception as e:
+        logger.warning("ID token verification failed: %s", e)
+        return jsonify({"error": "Invalid or expired token."}), 401
+
+    phone = decoded.get("phone_number")
+    if not phone:
+        return jsonify({"error": "Token did not contain a phone number."}), 400
+
+    user = users_by_phone.get(phone)
+    if user is None:
+        user = {"phone": phone, "firebase_uid": decoded.get("uid")}
+        users_by_phone[phone] = user
+        logger.info("Created new user record for %s", phone)
+    else:
+        logger.info("Existing user logged in: %s", phone)
+
+    return jsonify({"success": True, "phone": phone})
+
 
 # --- System prompt (tone + rules) -------------------------------------------
 SYSTEM_PROMPT = """You are Panah, a warm, respectful AI assistant that helps rural and \
@@ -336,6 +411,7 @@ def health():
         "status": "ok",
         "kb_entries_loaded": len(kb.entries),
         "llm_configured": client is not None,
+        "firebase_configured": firebase_app is not None,
     })
 
 

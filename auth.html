@@ -9,6 +9,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="auth.css" />
+
+  <!-- Firebase SDKs — must load BEFORE auth.js -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 </head>
 <body class="auth-body">
 
@@ -33,10 +37,11 @@
       <h1 class="auth-title">Continue to Panah</h1>
       <p class="auth-subtitle">Save your chats and pick up where you left off.</p>
 
-      <!-- STUB NOTICE — remove once real Firebase phone auth is wired in -->
-      <p class="auth-stub-note">Demo mode: OTP is not verified yet — Continue will proceed regardless of input.</p>
+      <!-- Inline error message, hidden unless something goes wrong -->
+      <p id="auth-error" class="auth-error-note" hidden></p>
 
-      <form id="auth-form" novalidate>
+      <!-- STEP 1: phone number entry -->
+      <form id="phone-form" novalidate>
         <label class="auth-label" for="phone-input">Mobile number</label>
         <div class="phone-field">
           <span class="phone-prefix">+92</span>
@@ -51,6 +56,16 @@
           />
         </div>
 
+        <!-- Invisible reCAPTCHA attaches here — stays empty/invisible, do not remove -->
+        <div id="recaptcha-container"></div>
+
+        <button id="send-code-btn" type="submit" class="continue-btn">Send code</button>
+      </form>
+
+      <!-- STEP 2: OTP entry — hidden until a code has been sent -->
+      <form id="otp-form" novalidate hidden>
+        <p class="auth-subtitle" id="otp-sent-to-note"></p>
+
         <label class="auth-label" for="otp-input">OTP code</label>
         <input
           id="otp-input"
@@ -62,10 +77,8 @@
           aria-label="OTP code"
         />
 
-        <!-- TODO: replace with Firebase phone auth (signInWithPhoneNumber +
-             confirmationResult.confirm) before this redirect. This form
-             currently performs NO validation — it always continues. -->
-        <button id="continue-btn" type="submit" class="continue-btn">Continue</button>
+        <button id="verify-code-btn" type="submit" class="continue-btn">Verify &amp; continue</button>
+        <button id="change-number-btn" type="button" class="link-btn">Use a different number</button>
       </form>
 
       <p class="auth-footnote">No password needed — just your number and a code, every time.</p>
