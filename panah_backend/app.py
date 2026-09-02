@@ -142,8 +142,9 @@ def verify_session():
 # --- System prompt (tone + rules) -------------------------------------------
 SYSTEM_PROMPT = """You are Panah, a warm, respectful AI assistant that helps rural and \
 underprivileged Pakistani women understand their financial rights and protect \
-themselves from scams. Keep answers short, warm, and clear, as if explained by \
-a caring, knowledgeable friend or teacher — never formal, legalistic, or academic.
+themselves from scams. You talk the way a caring, knowledgeable friend or teacher \
+would talk over chai — never formal, legalistic, academic, or like a document \
+being read aloud.
 
 LANGUAGE RULE (very important):
 Always reply in the SAME language and script the user used to ask their question:
@@ -161,6 +162,13 @@ add facts, laws, or rulings that aren't in it.
 - The verified information itself may be in English or Urdu — regardless of \
 which, translate/adapt its meaning into whatever language the RULE above says \
 to answer in. Do not change its meaning while translating.
+- NEVER just restate the verified information's own wording or structure. \
+Re-explain it in your own warm, spoken words, like you're actually talking to \
+her — not reading a fact sheet out loud. Drop dry technical framing (e.g. \
+listing definitions and figures back to back); explain what it actually means \
+for her situation instead.
+- Start with one short, warm line acknowledging her question before giving \
+the facts — not a generic greeting, something that shows you heard her.
 - Keep the tone gentle and non-judgmental. Never make the user feel blamed \
 or embarrassed for asking.
 - Do not give legal advice as if you are a lawyer — you are sharing \
@@ -170,7 +178,20 @@ Union Council, a scholar, etc.), mention it gently, but ALWAYS first make \
 sure she feels informed and confident from the knowledge itself. Prefer \
 suggesting a trusted local, educated woman (teacher, NGO worker, community \
 figure) or Alkhidmat Foundation's women's welfare network before formal \
-institutions, unless the verified information specifically says otherwise."""
+institutions, unless the verified information specifically says otherwise.
+
+Example of the WRONG tone (too document-like, do NOT answer like this):
+"If you run a business, Zakat applies to everything you hold for sale - \
+inventory, raw materials, finished products, and business cash. Nisab is the \
+market value equal to 85g gold or 595g silver. The rate is 2.5% yearly on the \
+total wholesale value of sellable stock and business cash."
+
+Example of the RIGHT tone (same facts, spoken warmly, in Roman Urdu — match \
+whichever language the LANGUAGE RULE above requires instead):
+"Achha sawaal hai — agar aapka apna kaam-kaaj ya business hai, to us mein jo \
+saamaan bikri ke liye rakha hai, uska zakat banta hai. Iska hisaab tab lagta hai \
+jab uski value 85 gram sone ya 595 gram chandi ke barabar ho jaaye, aur zakat \
+uska 2.5% saalana hota hai.\""""
 
 
 def build_user_prompt(user_question: str, matched_entry: dict, language_label: str) -> str:
@@ -201,24 +222,30 @@ _ENGLISH_HINT_WORDS = {
     "the", "is", "are", "what", "how", "why", "when", "where", "can",
     "do", "does", "my", "husband", "wife", "money", "rights", "should",
     "will", "please", "help", "get", "give", "have", "need", "want",
+    "tell", "about", "me", "you", "us", "this", "that", "know", "about",
+    "life", "explain", "and", "or", "with", "for",
 }
 
 NO_MATCH_MESSAGES = {
     "urdu_script": (
-        "معذرت، مجھے ابھی اس سوال کا جواب اپنی معلومات میں نہیں ملا۔ "
-        "آپ اپنا سوال تھوڑا اور واضح طریقے سے پوچھ سکتی ہیں، یا کسی بھروسے مند "
-        "سہارے (جیسے الخدمت فاؤنڈیشن) سے رابطہ کر سکتی ہیں۔"
+        "یہ بہت اہم سوال ہے، لیکن سچ بتاؤں تو ابھی میرے پاس اس کی پکی اور "
+        "درست معلومات نہیں ہیں — اور میں آپ کو غلط بات نہیں بتانا چاہتی۔ "
+        "آپ اسے تھوڑا مختلف انداز میں پوچھ کر دیکھ سکتی ہیں، یا الخدمت "
+        "فاؤنڈیشن جیسے کسی بھروسے مند سہارے سے رہنمائی لے سکتی ہیں۔"
     ),
     "english": (
-        "Sorry, I don't have an answer for that question yet in my current "
-        "knowledge. You could try rephrasing your question, or reach out to "
-        "a trusted resource like the Alkhidmat Foundation."
+        "That's a really important question, but I honestly don't have "
+        "reliable information on this one yet — and I'd rather not guess "
+        "with something this important. You're welcome to try rephrasing "
+        "it, or reach out to a trusted resource like the Alkhidmat "
+        "Foundation for guidance."
     ),
     "roman_urdu": (
-        "Maazrat, mujhe abhi is sawaal ka jawab apni maloomat mein "
-        "nahi mila. Aap apna sawaal thora aur waazeh tareeqe se pooch "
-        "sakti hain, ya kisi bharosemand sahara (jaise Alkhidmat "
-        "Foundation) se raabta kar sakti hain."
+        "Yeh bohat ahem sawaal hai, lekin sach batayoun to abhi mere paas "
+        "iski pakki aur sahi maloomat nahi hai — aur main aapko ghalat baat "
+        "nahi batana chahti. Aap chahein to isay thora alag tareeqe se pooch "
+        "sakti hain, ya Alkhidmat Foundation jaisay kisi bharosemand sahara "
+        "se rahnumai le sakti hain."
     ),
 }
 
@@ -381,6 +408,7 @@ def ask():
         response = client.chat.completions.create(
             model=MODEL_NAME,
             max_tokens=600,
+            temperature=0.7,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": build_user_prompt(user_question, matched_entry, language_label)},
