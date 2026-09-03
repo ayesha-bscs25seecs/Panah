@@ -16,6 +16,7 @@ const I18N = {
       about: "ہمارے بارے میں",
       contact: "رابطہ",
       privacy: "رازداری اور حفاظت",
+      login: "لاگ ان",
       chat: "بات چیت",
     },
     hero: {
@@ -147,6 +148,7 @@ const I18N = {
       about: "About",
       contact: "Contact",
       privacy: "Privacy & Safety",
+      login: "Log in",
       chat: "Chat",
     },
     hero: {
@@ -278,6 +280,7 @@ const I18N = {
       about: "Hamare baare mein",
       contact: "Rabta",
       privacy: "Privacy aur Hifazat",
+      login: "Log in",
       chat: "Baat cheet",
     },
     hero: {

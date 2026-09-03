@@ -61,6 +61,7 @@
       <a href="{{ url_for('about') }}" class="{{ 'active' if active_page == 'about' else '' }}" data-i18n="nav.about">About</a>
       <a href="{{ url_for('contact') }}" class="{{ 'active' if active_page == 'contact' else '' }}" data-i18n="nav.contact">Contact</a>
       <a href="{{ url_for('privacy') }}" class="{{ 'active' if active_page == 'privacy' else '' }}" data-i18n="nav.privacy">Privacy</a>
+      <a href="{{ url_for('auth_page') }}" class="landing-nav-login" data-i18n="nav.login">Login</a>
       <a href="{{ url_for('chat_page') }}" class="landing-nav-chat" data-i18n="nav.chat">Chat</a>
     </nav>
   </header>

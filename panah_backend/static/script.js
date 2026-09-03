@@ -100,7 +100,6 @@ const speakerOnIcon    = document.getElementById("speaker-on-icon");
 const speakerOffIcon   = document.getElementById("speaker-off-icon");
 const typingHeader     = document.getElementById("typing-indicator-header");
 const subtitleText     = document.getElementById("subtitle-text");
-const continueLink     = document.getElementById("continue-link");
 const suggestedChips   = document.getElementById("suggested-chips");
 
 const sidebar           = document.getElementById("sidebar");
@@ -730,9 +729,9 @@ function handleLogout() {
 
 /**
  * Applies the logged-in vs. guest UI state on load:
- *  - Guest: sidebar + its toggle stay hidden, "Log in" button shows.
- *  - Logged in: sidebar shows (persistent on desktop, drawer on mobile),
- *    the login button is hidden, and saved chat history is rendered.
+ *  - Guest: sidebar + its toggle stay hidden.
+ *  - Logged in: sidebar shows (persistent on desktop, drawer on mobile)
+ *    and saved chat history is rendered.
  */
 function initLoginState() {
   isLoggedIn = localStorage.getItem(LS_LOGIN_FLAG) === "1";
@@ -740,7 +739,6 @@ function initLoginState() {
   if (isLoggedIn) {
     if (sidebar) sidebar.hidden = false;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = false;
-    if (continueLink) continueLink.hidden = true;
 
     const label = localStorage.getItem(LS_USER_LABEL);
     if (sidebarProfileLbl && label) sidebarProfileLbl.textContent = label;
@@ -749,7 +747,6 @@ function initLoginState() {
   } else {
     if (sidebar) sidebar.hidden = true;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = true;
-    if (continueLink) continueLink.hidden = false;
   }
 }
 
