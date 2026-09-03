@@ -166,26 +166,73 @@ else:
 FIREBASE_CREDENTIALS_PATH = os.environ.get(
     "GOOGLE_APPLICATION_CREDENTIALS", "./firebase-service-account.json"
 )
+USING_EMULATOR = bool(os.environ.get("FIREBASE_AUTH_EMULATOR_HOST"))
 
 firebase_app = None
-if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+if USING_EMULATOR:
+    # No real service account needed — the emulator doesn't check real
+    # signatures. projectId just has to match what firebase init used.
+    firebase_app = firebase_admin.initialize_app(options={"projectId": "panah-a1e41"})
+    logger.info(
+        "Firebase Admin running in EMULATOR mode (FIREBASE_AUTH_EMULATOR_HOST=%s).",
+        os.environ["FIREBASE_AUTH_EMULATOR_HOST"],
+    )
+elif os.path.exists(FIREBASE_CREDENTIALS_PATH):
     cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
     firebase_app = firebase_admin.initialize_app(cred)
 else:
     logger.warning(
-        "Firebase service account file not found at %s — /verify-session "
-        "will reject all requests until this is set up.",
+        "Firebase service account file not found at %s, and "
+        "FIREBASE_AUTH_EMULATOR_HOST is not set — /verify-session "
+        "will reject all requests until one of these is configured.",
         FIREBASE_CREDENTIALS_PATH,
     )
+    
+# --- User store (SQLite) ------------------------------------------------
+# Persists across restarts, unlike the old in-memory dict. Single file,
+# no separate DB server needed — fine for a hackathon and easy to grow later.
+import sqlite3
 
-# --- User store --------------------------------------------------------------
-# PLACEHOLDER: plain in-memory dict, keyed by E.164 phone number.
-# This is fine for a hackathon demo but resets on every server restart —
-# same caveat as script.js's chat-history placeholder. Swap for a real DB
-# (SQLite is enough to start) before treating this as a real launch, ideally
-# at the same time chat history gets wired to a real backend too, since both
-# will end up keyed by this same user record.
-users_by_phone = {}
+DB_PATH = "panah_users.db"
+
+
+def _get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = _get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            phone TEXT PRIMARY KEY,
+            firebase_uid TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+def get_user(phone: str):
+    conn = _get_db()
+    row = conn.execute("SELECT * FROM users WHERE phone = ?", (phone,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def save_user(phone: str, firebase_uid: str):
+    conn = _get_db()
+    conn.execute(
+        "INSERT OR IGNORE INTO users (phone, firebase_uid) VALUES (?, ?)",
+        (phone, firebase_uid),
+    )
+    conn.commit()
+    conn.close()
+
+
+init_db()
 
 
 @app.route("/verify-session", methods=["POST"])
@@ -212,10 +259,9 @@ def verify_session():
     if not phone:
         return jsonify({"error": "Token did not contain a phone number."}), 400
 
-    user = users_by_phone.get(phone)
+    user = get_user(phone)
     if user is None:
-        user = {"phone": phone, "firebase_uid": decoded.get("uid")}
-        users_by_phone[phone] = user
+        save_user(phone, decoded.get("uid"))
         logger.info("Created new user record for %s", phone)
     else:
         logger.info("Existing user logged in: %s", phone)

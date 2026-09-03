@@ -36,6 +36,7 @@ const LS_USER_LABEL = "panah_user_label";
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
+auth.useEmulator("http://127.0.0.1:9099");
 
 /* ===================================================================
    2. DOM REFERENCES
