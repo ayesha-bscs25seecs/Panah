@@ -6,7 +6,84 @@
       "legal_basis": "Mehr in Pakistan is legally recognized under Section 10 of the Muslim Family Laws Ordinance (MFLO), 1961. A wife can demand her mehr at any point during the marriage, and the husband is legally obligated to pay it.\nMehr is recorded in the Nikahnama at the time of marriage, and courts recognize a wife's right to it even where the Nikahnama is incomplete. Mehr belongs entirely to the wife as her personal property and can be claimed even after divorce.",
       "islamic_basis": "Surah An-Nisa\nQuran\n4:4\nVerified\nوَءَاتُوا۟ ٱلنِّسَآءَ صَدُقَـٰتِهِنَّ نِحْلَةً ۚ فَإِن طِبْنَ لَكُمْ عَن شَىْءٍ مِّنْهُ نَفْسًا فَكُلُوهُ هَنِيٓـًٔا مَّرِيٓـًٔا\nAnd give the women [upon marriage] their [bridal] gifts graciously. But if they give up willingly to you anything of it, then take it in satisfaction and ease.\nBrief Tafsir: This verse establishes mehr as an unconditional gift to the wife, prohibiting her guardians from taking it. The wife alone decides if she wishes to waive any portion.\nView on Quran.com\nverse 4,instructs husbands to give women their mehr willingly, as an obligation. In his commentary Tafheem-ul-Quran, Maulana Abul Ala Maududi explains this verse as establishing mehr as a duty owed directly to the wife, not to her guardians or family — a correction of a pre-Islamic practice where a woman's guardians would take her bridal-due for themselves. The verse also afﬁrms that a wife may, entirely of her own free will, choose to give up part of her mehr — meaning the choice belongs to her alone, not to her husband or family.",
       "sources": [],
-      "qa": []
+      "qa": [
+        {
+          "id": "qa_1",
+          "question": "Mera mehr ada nahi hua, kya main abhi bhi le sakti hoon?",
+          "answer": "Haan. Mehr aapka qanooni haq hai jo Muslim Family Laws Ordinance 1961 ke tehat protect hai. Aap shaadi ke doran ya baad mein bhi mehr ka mutalba kar sakti hain, chahe talaq ho chuki ho. Behtar hoga ke apne Nikahnama ki copy nikalwayein aur zaroorat parne par Union Council ya family lawyer se raabta karein.if the husband dies before consummation, the full mehr is still due to the wife (Hanafi view), unless she agrees otherwise",
+          "keywords": [
+            "sakti",
+            "hoon",
+            "abhi",
+            "nahi",
+            "mehr"
+          ]
+        },
+        {
+          "id": "qa_2",
+          "question": "Kya sasural wale mera mehr rok saktay hain?",
+          "answer": "Nahin. Mehr sirf aapki milkiyat hai — na shohar, na sasural wale isay rok saktay hain. Quran mein Surah An-Nisa ki ayat 4 mein saaf kaha gaya hai ke mehr seedha biwi ko diya jaye, na ke uske sarparaston ko. Yeh aapka qanooni aur deeni dono lehaz se haq hai.",
+          "keywords": [
+            "sasural",
+            "wale",
+            "saktay",
+            "hain",
+            "mehr"
+          ]
+        },
+        {
+          "id": "qa_3",
+          "question": "Nikahnama mein mehr ki raqam likhi nahi gayi, kya phir bhi haq hai?",
+          "answer": "Haan, mehr ka haq khatam nahi hota chahe Nikahnama mein raqam waazeh na likhi ho. Aap apne family lawyer ya Union Council se rehnumai le sakti hain ke is soorat mein mehr ka tayin kaise hoga.",
+          "keywords": [
+            "nahi",
+            "gayi",
+            "raqam",
+            "nikahnama",
+            "mein",
+            "phir",
+            "likhi",
+            "mehr"
+          ]
+        },
+        {
+          "id": "qa_4",
+          "question": "Kya mein apna mehr maaf kar sakti hoon?",
+          "answer": "Haan, lekin yeh sirf aapki apni marzi se hona chahiye, kisi dabao ya majboori mein nahi. Quran isay khud biwi ka ikhtiyar batata hai — koi aur yeh faisla aapki taraf se nahi kar sakta.",
+          "keywords": [
+            "sakti",
+            "hoon",
+            "apna",
+            "mein",
+            "maaf",
+            "mehr"
+          ]
+        },
+        {
+          "id": "qa_5",
+          "question": "Talaq ke baad mehr ka kya hota hai?",
+          "answer": "Mehr talaq se khatam nahi hota. Agar mehr pehle se ada nahi hua tha, to talaq ke baad bhi aap iska mutalba kar sakti hain.",
+          "keywords": [
+            "talaq",
+            "hota",
+            "baad",
+            "mehr"
+          ]
+        },
+        {
+          "id": "qa_6",
+          "question": "Kya mehr sirf paison ki shakal mein hota hai?",
+          "answer": "Nahin, mehr paisa, zewar, jaidad ya koi bhi qeemti cheez ho sakti hai jo Nikah ke waqt tay ki gayi ho. Jo bhi tay hua ho, woh aapka haq hai.",
+          "keywords": [
+            "sirf",
+            "shakal",
+            "paison",
+            "hota",
+            "mein",
+            "mehr"
+          ]
+        }
+      ]
     },
     {
       "id": "topic_2:_nafaqa_(maintenance)",
@@ -14,7 +91,93 @@
       "legal_basis": "Maintenance rights are covered under Section 9 of the MFLO 1961. A husband is legally responsible for ﬁnancially maintaining his wife and children. If he fails to provide maintenance, the wife can approach the Union Council/Chairman, which can refer the matter to an Arbitration Council to enforce payment. If the Union Council's decision isn't satisfactory, there is a further right of revision before the Collector.",
       "islamic_basis": "Surah An-Nisa, \nQuran\n4:34\nVerified\nٱلرِّجَالُ قَوَّٰمُونَ عَلَى ٱلنِّسَآءِ بِمَا فَضَّلَ ٱللَّهُ بَعْضَهُمْ عَلَىٰ بَعْضٍ وَبِمَآ أَنفَقُوا۟ مِنْ أَمْوَٰلِهِمْ ۚ فَٱلصَّـٰلِحَـٰتُ قَـٰنِتَـٰتٌ حَـٰفِظَـٰتٌ لِّلْغَيْبِ بِمَا حَفِظَ ٱللَّهُ ۚ وَٱلَّـٰتِى تَخَافُونَ نُشُوزَهُنَّ فَعِظُوهُنَّ وَٱهْجُرُوهُنَّ فِى ٱلْمَضَاجِعِ وَٱضْرِبُوهُنَّ ۖ فَإِنْ أَطَعْنَكُمْ فَلَا تَبْغُوا۟ عَلَيْهِنَّ سَبِيلًا ۗ إِنَّ ٱللَّهَ كَانَ عَلِيًّا كَبِيرًا\nMen are in charge of women by [right of] what Allāh has given one over the other and what they spend [for maintenance] from their wealth. So righteous women are devoutly obedient, guarding in [the husband's] absence what Allāh would have them guard. But those [wives] from whom you fear arrogance - [first] advise them; [then if they persist], forsake them in bed; and [finally], strike them [lightly]. But if they obey you [once more], seek no means against them. Indeed, Allāh is ever Exalted and Grand.\nBrief Tafsir: The husband's financial responsibility is the basis of his qawwamah; it is a duty of care, not a right to control.\nView on Quran.com\nverse 34, describes men as qawwamun — a term Maulana Maududi's Tafheem-ul-Quran explains as someone responsible for the right conduct, safeguard, and maintenance of the affairs of the family, tied speciﬁcally to the fact that men spend of their wealth to support their wives. This ﬁnancial responsibility is the basis of the guardian role, not a license for control. Dr. Israr Ahmed, in his lecture on this topic, similarly clariﬁes that while men are designated as ﬁnancially responsible guardians, this role does not grant permission to neglect or oppress a wife's rights — the responsibility exists precisely to protect and provide for her, and misusing this authority to commit injustice is explicitly warned against.",
       "sources": [],
-      "qa": []
+      "qa": [
+        {
+          "id": "qa_1",
+          "question": "Mera shohar mujhe kharcha nahi deta, mein kya karoon?",
+          "answer": "Nafaqa (kharcha) dena shohar ki qanooni zimmedari hai, jo Muslim Family Laws Ordinance 1961 ke Section 9 mein darj hai. Agar shohar ada nahi kar raha, aap apne ilaqe ke Union Council mein darkhwast de sakti hain, jahan Arbitration Council maamla dekhegi. Agar wahan se insaaf na mile, aap Collector ke paas revision ke liye ja sakti hain.",
+          "keywords": [
+            "deta",
+            "shohar",
+            "kharcha",
+            "mein",
+            "nahi",
+            "karoon",
+            "mujhe"
+          ]
+        },
+        {
+          "id": "qa_2",
+          "question": "Kya talaq ke baad bhi nafaqa mil sakta hai?",
+          "answer": "Iddat ke doran nafaqa ka haq mojood hota hai. Har case mukhtalif ho sakta hai, is liye apne mahol ke mutabiq kisi family lawyer ya Union Council se mashwara zaroor karein.",
+          "keywords": [
+            "talaq",
+            "baad",
+            "sakta",
+            "nafaqa"
+          ]
+        },
+        {
+          "id": "qa_3",
+          "question": "Islam mein shohar par kharche ki zimmedari kyun hai?",
+          "answer": "Quran, Surah An-Nisa ayat 34 mein, mardon ko \"qawwam\" kaha gaya hai — yani woh jo apne maal se apni family ka kharcha uthata hai aur unki hifazat karta hai. Yeh zimmedari aurat ko dabane ke liye nahi, balke uski dekhbhal aur tahafuz ke liye di gayi hai.",
+          "keywords": [
+            "shohar",
+            "kyun",
+            "kharche",
+            "zimmedari",
+            "islam",
+            "mein"
+          ]
+        },
+        {
+          "id": "qa_4",
+          "question": "Agar shohar kaam nahi karta ya kharcha dene se inkaar kare, to kya yeh Islami taleemat ke khilaf hai?",
+          "answer": "Haan, nafaqa dena shohar par farz hai. Agar woh jaan boojh kar apni zimmedari se inkaar kare, yeh uski deeni zimmedari se hatna hai. Aap qanooni raasta (Union Council, Arbitration Council) istemal kar sakti hain apna haq lene ke liye.",
+          "keywords": [
+            "inkaar",
+            "taleemat",
+            "shohar",
+            "karta",
+            "kharcha",
+            "dene",
+            "agar",
+            "khilaf",
+            "islami",
+            "kaam",
+            "nahi",
+            "kare"
+          ]
+        },
+        {
+          "id": "qa_5",
+          "question": "Kya sirf khana aur kapda hi nafaqa hai, ya aur bhi cheezein shamil hain?",
+          "answer": "Nafaqa mein rehaish, khana, kapda, aur zaroori zindagi ke kharche shamil hain. Yeh mahol aur waqt ke mutabiq tay hota hai — jo us ilaqe mein munasib samjha jaye.",
+          "keywords": [
+            "sirf",
+            "nafaqa",
+            "khana",
+            "hain",
+            "cheezein",
+            "shamil",
+            "kapda"
+          ]
+        },
+        {
+          "id": "qa_6",
+          "question": "Kya sasural walon ka kharcha bhi shohar par farz hai, ya sirf biwi ka?",
+          "answer": "Shohar ki bunyadi zimmedari apni biwi aur bachon ka kharcha uthana hai. Sasural walon ka kharcha alag maamla hai aur is par qanooni rai family lawyer se lena behtar hoga.",
+          "keywords": [
+            "sasural",
+            "farz",
+            "sirf",
+            "shohar",
+            "kharcha",
+            "biwi",
+            "walon"
+          ]
+        }
+      ]
     },
     {
       "id": "topic_3:_scam_/_fraud_awareness",
@@ -22,7 +185,107 @@
       "legal_basis": "",
       "islamic_basis": "Surah An-Nisa, verse 29, instructs believers not to consume one another's wealth through falsehood or deception, and only through mutually agreed, lawful transactions. This principle — that wealth must never be taken from someone through trickery, pressure, or dishonesty — is the Quranic foundation for why scams, fraud, and exploitation of the vulnerable are considered a serious wrong, not just a legal offense.",
       "sources": [],
-      "qa": []
+      "qa": [
+        {
+          "id": "qa_1",
+          "question": "Mujhe kisi ne call kiya aur bola woh bank se hai, mera ATM PIN maanga, kya karoon?",
+          "answer": "Kabhi bhi apna ATM PIN, OTP ya password kisi ko na batayein, chahe woh khud ko bank ka numainda kahe. Asli banks kabhi phone par yeh maloomat nahi maangte. Agar shak ho, foran apne bank ko khud call karein (jo number aapke pass pehle se ho) aur is waqia ki report NCCIA helpline 1991 par karein.",
+          "keywords": [
+            "call",
+            "bank",
+            "mujhe",
+            "kisi",
+            "kiya",
+            "maanga",
+            "karoon",
+            "bola"
+          ]
+        },
+        {
+          "id": "qa_2",
+          "question": "Agar mere account se paise ghalat tareeqe se nikal gaye hain, kya wapas mil saktay hain?",
+          "answer": "Haan, agar transfer aapki ijazat ke baghair hua hai, State Bank ke qawaid ke mutabiq bank ki zimmedari hai ke woh saabit kare ke transfer aapki marzi se hua. Foran apne bank ko inform karein, aur agar bank sahi jawab na de to Banking Mohtasib Pakistan (0800-44522) par mufta shikayat darj karwayein.",
+          "keywords": [
+            "tareeqe",
+            "gaye",
+            "ghalat",
+            "account",
+            "nikal",
+            "saktay",
+            "paise",
+            "hain",
+            "agar",
+            "wapas",
+            "mere"
+          ]
+        },
+        {
+          "id": "qa_3",
+          "question": "Koi mujhe bol raha hai ke thora paisa lagayen aur double mil jayega, kya karoon?",
+          "answer": "Yeh aksar dhoka hota hai. Koi bhi asli sarmaya kaari (investment) itni jaldi double munafa nahi deti. Aisi offers se bachein, aur kisi bhi paisa lagane se pehle kisi bharosemand bank ya family member se mashwara zaroor karein.",
+          "keywords": [
+            "mujhe",
+            "lagayen",
+            "raha",
+            "jayega",
+            "thora",
+            "double",
+            "karoon",
+            "paisa"
+          ]
+        },
+        {
+          "id": "qa_4",
+          "question": "Mujhe naya SIM lene gayi thi, dukandar ne mera angootha lagaya aur bola SIM kal milega, kya yeh theek hai?",
+          "answer": "Yeh ek jaana pehchana dhoka hai jahan aapke angoothe ke nishan ka ghalat istemal karke\ndoosra SIM activate kiya ja sakta hai. Sirf ofﬁcially registered franchise se hi SIM lein, aur agar shak ho to PTA ko report karein.",
+          "keywords": [
+            "milega",
+            "lene",
+            "gayi",
+            "bola",
+            "naya",
+            "angootha",
+            "theek",
+            "dukandar",
+            "lagaya",
+            "mujhe"
+          ]
+        },
+        {
+          "id": "qa_5",
+          "question": "Mujhe WhatsApp par job ka offer mila hai jisme pehle paisa jama karwana keh rahe hain, kya yeh sahi hai?",
+          "answer": "Nahin, asli companies kabhi job dene se pehle paisa nahi maangti. Yeh ek aam scam hai. Aise kisi bhi offer mein paisa na bhejein aur agar shak ho to NCCIA helpline 1991 par report karein.",
+          "keywords": [
+            "rahe",
+            "whatsapp",
+            "karwana",
+            "jama",
+            "mila",
+            "jisme",
+            "sahi",
+            "offer",
+            "paisa",
+            "hain",
+            "pehle",
+            "mujhe"
+          ]
+        },
+        {
+          "id": "qa_6",
+          "question": "Kisi ne mujhe mera CNIC number aur tasveer maang li, kya yeh dena chahiye?",
+          "answer": "Sirf unhi jagah apni CNIC details dein jo aap achi tarah jaanti hon aur bharosemand hon (jaise bank, sarkari daftar). Anjaan logon, calls, ya online forms ko apni CNIC details na dein — is se identity theft ho sakti hai.",
+          "keywords": [
+            "chahiye",
+            "dena",
+            "tasveer",
+            "maang",
+            "kisi",
+            "number",
+            "cnic",
+            "mujhe"
+          ]
+        }
+      ]
     }
   ]
 }

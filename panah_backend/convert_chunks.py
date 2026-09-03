@@ -34,9 +34,9 @@ def convert_docx_to_retrieval_json(doc_path):
     # Extract Q&A items
     qa_list = []
     qa_matches = re.findall(
-        r"Q:\s*(.*?)\n\s*A:\s*(.*?)(?=\n\s*Q:|\n\s*Sources|$)",
-        topic_body,
-        re.DOTALL,
+      r"Q:\s*(.*?)\s*A:\s*(.*?)(?=\s*Q:|\s*Sources|$)",
+      topic_body,
+      re.DOTALL,
     )
 
     for idx, (q, a) in enumerate(qa_matches):
