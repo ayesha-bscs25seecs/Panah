@@ -28,28 +28,30 @@
 <body class="landing-body">
 
   <header class="landing-header">
-    <a href="{{ url_for('home') }}" aria-label="Panah home">
-      <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" />
-    </a>
+    <div class="header-left">
+      <a href="{{ url_for('home') }}" aria-label="Panah home">
+        <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" />
+      </a>
 
-    <!-- Language switcher — persistent dropdown next to the brand logo -->
-    <div id="lang-switcher" class="lang-switcher">
-      <button id="lang-switcher-btn" class="lang-switcher-btn" type="button"
-              aria-haspopup="true" aria-expanded="false" aria-label="Select language">
-        <svg class="lang-switcher-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        <span id="lang-switcher-label" class="lang-switcher-label">اردو</span>
-        <svg class="lang-switcher-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-      <div id="lang-switcher-dropdown" class="lang-switcher-dropdown" role="menu" aria-label="Language options">
-        <button type="button" class="lang-switcher-option" data-lang="ur" role="menuitem">اردو</button>
-        <button type="button" class="lang-switcher-option" data-lang="en" role="menuitem">English</button>
-        <button type="button" class="lang-switcher-option" data-lang="roman" role="menuitem">Roman Urdu</button>
+      <!-- Language switcher — persistent dropdown next to the brand logo -->
+      <div id="lang-switcher" class="lang-switcher">
+        <button id="lang-switcher-btn" class="lang-switcher-btn" type="button"
+                aria-haspopup="true" aria-expanded="false" aria-label="Select language">
+          <svg class="lang-switcher-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span id="lang-switcher-label" class="lang-switcher-label">اردو</span>
+          <svg class="lang-switcher-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div id="lang-switcher-dropdown" class="lang-switcher-dropdown" role="menu" aria-label="Language options">
+          <button type="button" class="lang-switcher-option" data-lang="ur" role="menuitem">اردو</button>
+          <button type="button" class="lang-switcher-option" data-lang="en" role="menuitem">English</button>
+          <button type="button" class="lang-switcher-option" data-lang="roman" role="menuitem">Roman Urdu</button>
+        </div>
       </div>
     </div>
 
