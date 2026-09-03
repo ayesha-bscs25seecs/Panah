@@ -272,7 +272,7 @@ function hideTypingIndicator() {
    6. BACKEND API CALLS
    =================================================================== */
 
-async function askBackend(question) {
+async function askBackend(question, history) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -280,7 +280,7 @@ async function askBackend(question) {
     const response = await fetch(`${API_BASE}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, history }),
       signal: controller.signal,
     });
 
@@ -328,7 +328,7 @@ async function handleSend() {
     currentChatId = generateChatId();
   }
 
-  appendMessage(question, "user");
+    appendMessage(question, "user");
   setSuggestedChipsVisible(false);
 
   isWaiting = true;
@@ -336,7 +336,11 @@ async function handleSend() {
   showTypingIndicator();
 
   try {
-    const { ok, status, data } = await askBackend(question);
+    // `currentMessages` already includes the question we just appended above
+    // (see appendMessage) — drop that last entry so it isn't sent twice:
+    // once as its own "history" turn and again as the "question" field.
+    const priorHistory = currentMessages.slice(0, -1);
+    const { ok, status, data } = await askBackend(question, priorHistory);
 
     hideTypingIndicator();
 

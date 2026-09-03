@@ -457,17 +457,36 @@ maana jaata hai."
 same four items, folded into one bolded clause, reads like a friend talking \
 instead of a policy handout.)
 
-Example of correctly chunked dual-source answer (broad question, both \
-sources shown, enforcement held back as a follow-up instead of dumped):
+Example of correctly chunked dual-source answer, ENGLISH version (broad \
+question, both sources shown, enforcement held back as a follow-up instead \
+of dumped -- notice EVERY sentence, including the source labels, stays in \
+the same language; never mix an English sentence with a Roman Urdu label \
+or vice versa):
 
 "Nafaqa is a wife's right to **financial maintenance** from her husband — \
 shelter, food, clothing, and essential living expenses.
 
-Islam mein: Surah An-Nisa 4:34 places this responsibility on the husband as \
+In Islam: Surah An-Nisa 4:34 places this responsibility on the husband as \
 part of his role of care, not control.
 
-Pakistan ke qanoon mein: under the **MFLO 1961**, this is a legally \
-enforceable right.
+Under Pakistani law: the **MFLO 1961** makes this a legally enforceable \
+right.
+
+Would you like to know what can be done if a husband refuses to pay \
+nafaqa?"
+
+Example of the SAME answer, ROMAN URDU version (use this shape instead \
+whenever the LANGUAGE RULE says to reply in Roman Urdu -- again, every \
+sentence and label stays in Roman Urdu, none of it reverts to English):
+
+"Nafaqa aap ka haq hai apne shohar se — is mein **rehaish, khana, kapda, \
+aur zaroori kharche** shaamil hain.
+
+Islam mein: Surah An-Nisa 4:34 mein yeh zimmedari shohar par daali gayi \
+hai, uski dekhbhaal ke kirdar ke hissay ke tor par, na ke control ke.
+
+Pakistan ke qanoon mein: **MFLO 1961** ke tehat yeh aik qanooni tor par \
+lagoo hone wala haq hai.
 
 Kya aap jaanna chahti hain ke agar shohar nafaqa na de to kya kiya ja sakta \
 hai?"
@@ -557,6 +576,29 @@ def build_history_messages(history: list | None) -> list:
             messages.append({"role": role, "content": text.strip()})
     return messages
 
+
+def _is_likely_followup_reply(text: str) -> bool:
+    """True for very short replies (roughly 3 words or fewer) that are too
+    short to carry real searchable content on their own — regardless of
+    script/language, since this checks word count, not specific words like
+    "yes"/"haan". Deliberately narrow: this is what limits the fallback below
+    to short acknowledgements only, not to genuine (if terse) new questions."""
+    return len(text.split()) <= 3
+
+
+def _get_last_bot_message(history: list | None) -> str | None:
+    """Return the text of the most recent bot/assistant turn in `history`,
+    if any. Same {sender, text} shape as build_history_messages above."""
+    if not history:
+        return None
+    for item in reversed(history):
+        if not isinstance(item, dict):
+            continue
+        sender = item.get("sender") or item.get("role")
+        text = item.get("text") or item.get("content")
+        if sender in ("bot", "assistant") and isinstance(text, str) and text.strip():
+            return text.strip()
+    return None
 
 # --- Simple language detection for the NO-MATCH fallback message only ------
 # (When an LLM call happens, the LLM itself handles language-matching per the
@@ -743,6 +785,19 @@ def ask():
     # original wording may actually match keywords better than a paraphrase.
     if not matched_entry and search_query != user_question:
         matched_entry = kb.get_best_match(user_question)
+
+    # Still nothing? If this looks like a bare follow-up reply ("yes",
+    # "haan", "ok"...) rather than a real question, retry using OUR OWN last
+    # message as the search subject instead — see the two helpers above for
+    # why. This only fires when both attempts above already failed, so it
+    # can't change the outcome for anything that already matched normally.
+    if not matched_entry and _is_likely_followup_reply(user_question):
+        last_bot_message = _get_last_bot_message(history)
+        if last_bot_message:
+            followup_match = kb.get_best_match(last_bot_message)
+            if followup_match:
+                matched_entry = followup_match
+                search_query = last_bot_message
 
     if not matched_entry:
         logger.info("No confident match for question: %r", user_question)
