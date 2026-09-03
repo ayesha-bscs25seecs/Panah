@@ -167,7 +167,32 @@ function formatTime(date = new Date()) {
 }
 
 function safeText(text) {
-  return document.createTextNode(String(text));
+  // Renders **bold** markdown (which the LLM's answers use, e.g. for
+  // "**mandatory bridal gift**") as real <strong> elements. Still 100%
+  // XSS-safe: we never touch innerHTML — everything outside the ** markers,
+  // and the bold text itself, is inserted via createTextNode/textContent,
+  // never parsed as HTML.
+  const str = String(text);
+  const fragment = document.createDocumentFragment();
+  const boldPattern = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = boldPattern.exec(str)) !== null) {
+    if (match.index > lastIndex) {
+      fragment.appendChild(document.createTextNode(str.slice(lastIndex, match.index)));
+    }
+    const strong = document.createElement("strong");
+    strong.textContent = match[1];
+    fragment.appendChild(strong);
+    lastIndex = boldPattern.lastIndex;
+  }
+
+  if (lastIndex < str.length) {
+    fragment.appendChild(document.createTextNode(str.slice(lastIndex)));
+  }
+
+  return fragment;
 }
 
 function sanitizeInput(str, maxLen = MAX_QUESTION_LENGTH) {
