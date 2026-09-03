@@ -1,0 +1,123 @@
+{#
+  Panah — base.html
+  Shared layout for the landing, About, Contact, and Privacy pages.
+  Provides the common <head> boilerplate, <header>/<nav>, <footer>,
+  and the language/login entry modals.
+
+  Child templates define:
+    {% block title %}        — page <title>
+    {% block description %}  — meta description (optional, has a default)
+    {% block content %}      — page-specific body content inside <main>
+    {% block scripts %}      — page-specific <script> tags (default: i18n.js)
+
+  Routes pass active_page="home"|"about"|"contact"|"privacy" so the
+  nav can highlight the current link.
+#}
+<!DOCTYPE html>
+<html lang="ur" dir="ltr" class="landing-body">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="{% block description %}Panah — aapka mehfooz sahara. Mehr, Nafaqa, aur scams se bachao ke sawaalon ka seedha jawab.{% endblock %}" />
+  <meta name="referrer" content="no-referrer" />
+  <title>{% block title %}Panah — Aapka mehfooz sahara{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}" />
+</head>
+<body class="landing-body">
+
+  <header class="landing-header">
+    <a href="{{ url_for('home') }}" aria-label="Panah home">
+      <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" />
+    </a>
+
+    <!-- Language switcher — persistent dropdown next to the brand logo -->
+    <div id="lang-switcher" class="lang-switcher">
+      <button id="lang-switcher-btn" class="lang-switcher-btn" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-label="Select language">
+        <svg class="lang-switcher-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <span id="lang-switcher-label" class="lang-switcher-label">اردو</span>
+        <svg class="lang-switcher-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div id="lang-switcher-dropdown" class="lang-switcher-dropdown" role="menu" aria-label="Language options">
+        <button type="button" class="lang-switcher-option" data-lang="ur" role="menuitem">اردو</button>
+        <button type="button" class="lang-switcher-option" data-lang="en" role="menuitem">English</button>
+        <button type="button" class="lang-switcher-option" data-lang="roman" role="menuitem">Roman Urdu</button>
+      </div>
+    </div>
+
+    <nav class="landing-nav" aria-label="Main navigation">
+      <a href="{{ url_for('home') }}" class="{{ 'active' if active_page == 'home' else '' }}" data-i18n="nav.home">Home</a>
+      <a href="{{ url_for('about') }}" class="{{ 'active' if active_page == 'about' else '' }}" data-i18n="nav.about">About</a>
+      <a href="{{ url_for('contact') }}" class="{{ 'active' if active_page == 'contact' else '' }}" data-i18n="nav.contact">Contact</a>
+      <a href="{{ url_for('privacy') }}" class="{{ 'active' if active_page == 'privacy' else '' }}" data-i18n="nav.privacy">Privacy</a>
+      <a href="{{ url_for('chat_page') }}" class="landing-nav-chat" data-i18n="nav.chat">Chat</a>
+    </nav>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  <footer class="landing-footer">
+    <div class="landing-footer-inner">
+      <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-footer-logo" />
+      <nav class="landing-footer-nav" aria-label="Footer navigation">
+        <a href="{{ url_for('home') }}" data-i18n="nav.home">Home</a>
+        <a href="{{ url_for('about') }}" data-i18n="nav.about">About</a>
+        <a href="{{ url_for('contact') }}" data-i18n="nav.contact">Contact</a>
+        <a href="{{ url_for('privacy') }}" data-i18n="nav.privacy">Privacy</a>
+        <a href="{{ url_for('chat_page') }}" data-i18n="nav.chat">Chat</a>
+      </nav>
+      <p class="landing-footer-copy" data-i18n="footer.tagline">Panah — aapka mehfooz sahara.</p>
+    </div>
+  </footer>
+
+  <!-- Entry popups: language choice, then login/guest choice.
+       entry.js (included on homepage) controls when these appear.
+       On pages that don't load entry.js they stay hidden. -->
+  <div id="entry-overlay" class="entry-overlay" hidden>
+    <div class="entry-modal" id="lang-modal" hidden>
+      <div class="arch-decoration" aria-hidden="true">
+        <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 120V70a80 80 0 0 1 160 0v50" stroke="#B4866C" stroke-width="16" stroke-linecap="round"/>
+          <path d="M60 120V75a40 40 0 0 1 80 0v45" stroke="#1F3E43" stroke-width="16" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 data-i18n="entry.langTitle">Apni zubaan chunein</h2>
+      <p data-i18n="entry.langSubtitle">Panah ussi zubaan mein jawab degi.</p>
+      <div class="entry-options">
+        <button class="entry-option" data-lang-select="ur" type="button">اردو</button>
+        <button class="entry-option" data-lang-select="en" type="button">English</button>
+        <button class="entry-option" data-lang-select="roman" type="button">Roman Urdu</button>
+      </div>
+      <button class="entry-skip" id="lang-skip" type="button" data-i18n="entry.langSkip">Urdu mein jari rakhein</button>
+    </div>
+
+    <div class="entry-modal" id="entry-modal" hidden>
+      <div class="arch-decoration" aria-hidden="true">
+        <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 120V70a80 80 0 0 1 160 0v50" stroke="#B4866C" stroke-width="16" stroke-linecap="round"/>
+          <path d="M60 120V75a40 40 0 0 1 80 0v45" stroke="#1F3E43" stroke-width="16" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 data-i18n="entry.entryTitle">Log in ya guest?</h2>
+      <p data-i18n="entry.entrySubtitle">Login se guftagu save hogi; guest mein mukammal access hai.</p>
+      <div class="entry-actions">
+        <button class="entry-action-primary" id="entry-login" type="button" data-i18n="entry.login">Phone se log in karein</button>
+        <button class="entry-action-secondary" id="entry-guest" type="button" data-i18n="entry.guest">Mehmaan ke tor par jari rakhein</button>
+      </div>
+    </div>
+  </div>
+
+  {% block scripts %}
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='lang-switcher.js') }}"></script>
+  {% endblock %}
+</body>
+</html>

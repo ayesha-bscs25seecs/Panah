@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Panah — Contact{% endblock %}
+{% block description %}Panah — contact our team.{% endblock %}
+
+{% block content %}
+  <main class="content-page-main">
+    <section class="content-hero">
+      <h1 data-i18n="contact.title">Contact us</h1>
+      <p data-i18n="contact.lead">Our team is ready to respond to your feedback, questions, or concerns.</p>
+    </section>
+
+    <section class="content-body">
+      <form class="contact-form" onsubmit="event.preventDefault();">
+        <div>
+          <label for="contact-name" data-i18n="contact.formName">Your name</label>
+          <input id="contact-name" type="text" autocomplete="name" />
+        </div>
+        <div>
+          <label for="contact-message" data-i18n="contact.formMessage">Your message</label>
+          <textarea id="contact-message"></textarea>
+        </div>
+        <button type="submit" data-i18n="contact.formSubmit">Send message</button>
+      </form>
+
+      <div class="contact-meta">
+        <p><strong data-i18n="contact.emailLabel">Email:</strong> hello@panah.example</p>
+        <p><strong data-i18n="contact.phoneLabel">Phone:</strong> <span data-i18n="contact.phone">+92-300-1234567</span></p>
+      </div>
+
+      <p data-i18n="contact.note">We try to reply within 24 to 48 hours.</p>
+    </section>
+  </main>
+{% endblock %}

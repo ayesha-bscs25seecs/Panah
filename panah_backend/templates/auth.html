@@ -7,10 +7,10 @@
   <meta name="referrer" content="no-referrer" />
   <title>Panah — Continue</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}" />
 
-  <script src="i18n.js"></script>
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 
   <!-- Firebase SDKs — must load BEFORE auth.js -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -21,7 +21,7 @@
   <div id="auth-app" role="main" aria-label="Panah login and signup">
 
     <header id="auth-header">
-      <a href="index.html" class="back-link" aria-label="Back to chat">
+      <a href="{{ url_for('chat_page') }}" class="back-link" aria-label="Back to chat">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"/>
           <polyline points="12 19 5 12 12 5"/>
@@ -87,6 +87,6 @@
 
   </div>
 
-  <script src="auth.js"></script>
+  <script src="{{ url_for('static', filename='auth.js') }}"></script>
 </body>
 </html>

@@ -51,7 +51,7 @@ import re
 import json
 import random
 import logging
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
 from openai import OpenAI
 
@@ -72,6 +72,74 @@ app = Flask(__name__)
 # For the hackathon demo this is wide open (allow all origins); if you deploy
 # publicly later, tighten this to your actual frontend's domain.
 CORS(app)
+
+
+# --- Page routes (serve templates) ------------------------------------------
+# Flask now serves ALL frontend pages from templates/ and static/.
+# The four landing pages use template inheritance (base.html).
+# index.html (chat) and auth.html (login/OTP) are standalone templates.
+
+@app.route("/")
+def home():
+    return render_template("homepage.html", active_page="home")
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html", active_page="about")
+
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html", active_page="contact")
+
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html", active_page="privacy")
+
+
+@app.route("/chat")
+def chat_page():
+    return render_template("index.html")
+
+
+@app.route("/auth")
+def auth_page():
+    return render_template("auth.html")
+
+
+# Legacy redirects — entry.js and auth.js use hardcoded relative paths like
+# "auth.html" and "homepage.html". These redirects ensure those navigations
+# still resolve correctly after the file move.
+@app.route("/homepage.html")
+def redirect_homepage():
+    return redirect(url_for("home"), code=301)
+
+
+@app.route("/index.html")
+def redirect_index():
+    return redirect(url_for("chat_page"), code=301)
+
+
+@app.route("/auth.html")
+def redirect_auth():
+    return redirect(url_for("auth_page"), code=301)
+
+
+@app.route("/about.html")
+def redirect_about():
+    return redirect(url_for("about"), code=301)
+
+
+@app.route("/contact.html")
+def redirect_contact():
+    return redirect(url_for("contact"), code=301)
+
+
+@app.route("/privacy.html")
+def redirect_privacy():
+    return redirect(url_for("privacy"), code=301)
 
 # --- Qwen / DashScope client setup -----------------------------------------
 # Uses the OpenAI-compatible SDK pointed at Alibaba Cloud's international

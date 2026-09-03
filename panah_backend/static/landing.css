@@ -92,6 +92,96 @@ body.landing-body {
 .landing-nav-chat:active { transform: scale(0.97); }
 
 /* ==========================================================================
+   LANGUAGE SWITCHER
+   A persistent dropdown button placed next to the Panah logo.
+   Base styles (light theme) — dark-header overrides in style.css / auth.css.
+   ========================================================================== */
+.lang-switcher {
+  position: relative;
+  z-index: 10;
+}
+
+.lang-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(31, 62, 67, 0.08);
+  color: var(--teal);
+  font-family: var(--font-base);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+.lang-switcher-btn:hover { background-color: rgba(31, 62, 67, 0.14); }
+
+.lang-switcher-icon { flex-shrink: 0; }
+
+.lang-switcher-label {
+  display: inline-block;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lang-switcher-chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.lang-switcher-open .lang-switcher-chevron {
+  transform: rotate(180deg);
+}
+
+.lang-switcher-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 130px;
+  background-color: var(--white);
+  border: 1px solid rgba(31, 62, 67, 0.1);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+  z-index: 40;
+}
+.lang-switcher-open .lang-switcher-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.lang-switcher-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--teal);
+  font-family: var(--font-base);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.lang-switcher-option:hover {
+  background-color: rgba(180, 134, 108, 0.1);
+}
+.lang-switcher-option.active {
+  background-color: rgba(180, 134, 108, 0.15);
+  color: var(--maroon);
+  font-weight: 600;
+}
+
+/* ==========================================================================
    FOOTER
    ========================================================================== */
 .landing-footer {
