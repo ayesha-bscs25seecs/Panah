@@ -69,7 +69,7 @@ html, body.auth-body {
 .auth-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--teal);
+  color: var(--maroon);
   margin-bottom: 6px;
 }
 
@@ -169,7 +169,7 @@ html, body.auth-body {
   height: 48px;
   border: none;
   border-radius: 24px;
-  background-color: var(--teal);
+  background-color: var(--maroon);
   color: var(--cream);
   font-size: 1rem;
   font-weight: 600;
@@ -177,8 +177,8 @@ html, body.auth-body {
   transition: background-color 0.2s;
   line-height: 48px;
 }
-.continue-btn:hover { background-color: #17333a; }
-.continue-btn:active { background-color: #0f2428; }
+.continue-btn:hover { background-color: var(--maroon-dark); }
+.continue-btn:active { background-color: #3a1b22; }
 .continue-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;

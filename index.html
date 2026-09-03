@@ -27,13 +27,13 @@
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span>Nayi guftagu</span>
+          <span data-i18n="chat.newChat">Nayi guftagu</span>
         </button>
       </div>
 
       <!-- Chat history list — populated by script.js -->
       <nav class="sidebar-history" aria-label="Past chats">
-        <p class="sidebar-section-label">Pichli guftagu</p>
+        <p class="sidebar-section-label" data-i18n="chat.historyLabel">Pichli guftagu</p>
         <ul id="chat-history-list">
           <!-- <li class="history-item" data-chat-id="...">Title</li> injected here -->
         </ul>
@@ -48,9 +48,9 @@
               <circle cx="12" cy="7" r="4"/>
             </svg>
           </span>
-          <span id="sidebar-profile-label" class="profile-label">Mera account</span>
+          <span id="sidebar-profile-label" class="profile-label" data-i18n="chat.myAccount">Mera account</span>
         </button>
-        <button id="logout-btn" class="sidebar-btn sidebar-btn-ghost" type="button">Log out</button>
+        <button id="logout-btn" class="sidebar-btn sidebar-btn-ghost" type="button" data-i18n="chat.logout">Log out</button>
       </div>
     </aside>
 
@@ -90,7 +90,7 @@
           </a>
           <div class="header-text">
             <h1 class="app-name">Panah</h1>
-            <p class="subtitle" id="subtitle-text">aapka mahfooz sahara</p>
+            <p class="subtitle" id="subtitle-text" data-i18n="chat.subtitle">aapka mahfooz sahara</p>
             <!-- Typing indicator shown in header while waiting for a reply -->
             <div class="typing-indicator-header" id="typing-indicator-header" aria-live="polite" aria-label="Bot is typing" hidden>
               <span class="dot"></span>
@@ -120,7 +120,7 @@
             <line x1="23" y1="9" x2="17" y2="15"/>
             <line x1="17" y1="9" x2="23" y2="15"/>
           </svg>
-          <span class="speaker-label">Awaz</span>
+          <span class="speaker-label" data-i18n="chat.speakerLabel">Awaz</span>
         </button>
 
         <!-- Continue / log in link — hidden once logged in (script.js) -->
@@ -146,7 +146,7 @@
       </div>
 
       <!-- ===== SUGGESTED QUESTION CHIPS ===== -->
-      <div id="suggested-chips" class="suggested-chips" aria-label="Suggested questions">
+      <div id="suggested-chips" class="suggested-chips" data-i18n-attr="aria-label:chat.suggestedTitle">
         <!-- Populated by script.js -->
       </div>
 
@@ -159,7 +159,7 @@
             autocomplete="off"
             maxlength="500"
             placeholder="Apna sawaal likhein ya bolein..."
-            aria-label="Type your question"
+            data-i18n-attr="placeholder:chat.placeholder|aria-label:chat.placeholder"
           />
 
           <!-- Microphone button for voice input (hidden if unsupported) -->
@@ -167,8 +167,7 @@
             id="mic-btn"
             class="input-btn"
             type="button"
-            aria-label="Speak your question"
-            title="Speak your question"
+            data-i18n-attr="aria-label:chat.micLabel|title:chat.micLabel"
           >
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -184,8 +183,7 @@
           id="send-btn"
           class="input-btn send-btn"
           type="button"
-          aria-label="Send message"
-          title="Send"
+          data-i18n-attr="aria-label:chat.sendLabel|title:chat.sendLabel"
         >
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>
@@ -202,6 +200,7 @@
   </div><!-- /#layout -->
 
   <!-- Application logic — vanilla JS, no build tools required -->
+  <script src="i18n.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

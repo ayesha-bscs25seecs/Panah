@@ -50,15 +50,20 @@ const REQUEST_TIMEOUT_MS = 15000;
 /** Maximum characters allowed per question. */
 const MAX_QUESTION_LENGTH = 500;
 
-/** Suggested question chips shown above the input for quick exploration. */
-const SUGGESTED_QUESTIONS = [
-  { topic: "Mehr",  text: "Mera haq mehr kya hai?" },
-  { topic: "Nafaqa", text: "Mere shohar mujhe kharcha nahi dete, main kya karun?" },
-  { topic: "Scam",   text: "Kisi ne mujhe prize jeetne ka message bheja hai, kya yeh jhooth hai?" },
-];
+/** UI language chosen by the user (default Urdu). */
+const UI_LANG =
+  typeof window !== "undefined" && window.PanahI18n
+    ? window.PanahI18n.getLang()
+    : "ur";
 
-/** Language code for speech OUTPUT (bot reading replies aloud). Unchanged. */
-const SPEECH_LANG = "ur-PK";
+const UI_STRINGS =
+  typeof window !== "undefined" && window.PanahI18n
+    ? window.PanahI18n.I18N[UI_LANG].chat
+    : {};
+
+/** Language code for speech OUTPUT, based on the chosen UI language. */
+const SPEECH_LANG =
+  { ur: "ur-PK", en: "en-US", roman: "ur-PK" }[UI_LANG] || "ur-PK";
 
 /**
  * Language codes for speech INPUT (mic transcription).
@@ -72,17 +77,11 @@ const MIC_LANGUAGES = {
 };
 
 /** Welcome message shown when a fresh chat starts. */
-const WELCOME_MESSAGE =
-  "Assalamu Alaikum! Main Panah hoon — aapka mahfooz sahara. " +
-  "Aap mujhse mehr, nafaqa, zakat, wirasat ya kisi bhi maali haq ke baare mein " +
-  "poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein. " +
-  "Aapki baat bilkul mehfooz hai — kuch bhi save nahi hota.";
+const WELCOME_MESSAGE = UI_STRINGS.welcome || "";
 
 /** Welcome message variant for logged-in users (storage note differs). */
 const WELCOME_MESSAGE_LOGGED_IN =
-  "Assalamu Alaikum! Main Panah hoon — aapka mahfooz sahara. " +
-  "Aap mujhse mehr, nafaqa, zakat, wirasat ya kisi bhi maali haq ke baare mein " +
-  "poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein.";
+  UI_STRINGS.welcomeLoggedIn || WELCOME_MESSAGE;
 
 /** localStorage keys — login state only. Chat history is NOT stored here. */
 const LS_LOGIN_FLAG   = "panah_logged_in";
@@ -131,7 +130,7 @@ let isListening = false;
 /**
  * Which language the mic should listen in: "ur" or "en".
  */
-let micLanguage = "ur";
+let micLanguage = UI_LANG === "en" ? "en" : "ur";
 
 /** Whether the current visitor is logged in (read once at init). */
 let isLoggedIn = false;
@@ -361,8 +360,10 @@ async function handleSend() {
 function renderSuggestedChips() {
   if (!suggestedChips) return;
 
+  const chips = UI_STRINGS.chips || [];
+
   suggestedChips.innerHTML = "";
-  SUGGESTED_QUESTIONS.forEach(({ topic, text }) => {
+  chips.forEach(({ topic, text }) => {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "chip";
@@ -573,7 +574,7 @@ function saveAllChats(chats) {
 /** Derives a short title from the first user message in a chat. */
 function deriveChatTitle(messages) {
   const firstUser = messages.find((m) => m.sender === "user");
-  const base = firstUser ? firstUser.text : "Nayi guftagu";
+  const base = firstUser ? firstUser.text : (UI_STRINGS.newChat || "Nayi guftagu");
   return base.length > 40 ? base.slice(0, 40) + "…" : base;
 }
 
@@ -613,7 +614,8 @@ function renderHistoryList() {
   if (chats.length === 0) {
     const note = document.createElement("p");
     note.className = "sidebar-empty-note";
-    note.textContent = "Abhi tak koi guftagu save nahi hui.";
+    note.textContent =
+      UI_STRINGS.emptyHistory || "Abhi tak koi guftagu save nahi hui.";
     historyListEl.appendChild(note);
     return;
   }
@@ -758,6 +760,12 @@ window.addEventListener("beforeunload", () => {
    13. INITIALISATION  (runs on page load)
    =================================================================== */
 
+function applyChatLanguage() {
+  if (window.PanahI18n) {
+    window.PanahI18n.applyLanguage(UI_LANG);
+  }
+}
+
 (function init() {
   initVoices();
   recognition = initSpeechRecognition();
@@ -767,6 +775,7 @@ window.addEventListener("beforeunload", () => {
   }
 
   initLoginState();
+  applyChatLanguage();
   renderSuggestedChips();
 
   const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;

@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="auth.css" />
 
+  <script src="i18n.js"></script>
+
   <!-- Firebase SDKs — must load BEFORE auth.js -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -34,15 +36,15 @@
     </header>
 
     <main class="auth-card">
-      <h1 class="auth-title">Continue to Panah</h1>
-      <p class="auth-subtitle">Save your chats and pick up where you left off.</p>
+      <h1 class="auth-title" data-i18n="auth.title">Continue to Panah</h1>
+      <p class="auth-subtitle" data-i18n="auth.subtitle">Save your chats and pick up where you left off.</p>
 
       <!-- Inline error message, hidden unless something goes wrong -->
-      <p id="auth-error" class="auth-error-note" hidden></p>
+      <p id="auth-error" class="auth-error-note" hidden data-i18n="auth.error">Something went wrong. Please try again.</p>
 
       <!-- STEP 1: phone number entry -->
       <form id="phone-form" novalidate>
-        <label class="auth-label" for="phone-input">Mobile number</label>
+        <label class="auth-label" for="phone-input" data-i18n="auth.phoneLabel">Mobile number</label>
         <div class="phone-field">
           <span class="phone-prefix">+92</span>
           <input
@@ -52,36 +54,35 @@
             autocomplete="tel"
             placeholder="3XX XXXXXXX"
             maxlength="10"
-            aria-label="Mobile number"
+            data-i18n-attr="aria-label:auth.phoneLabel|placeholder:auth.phonePlaceholder"
           />
         </div>
 
         <!-- Invisible reCAPTCHA attaches here — stays empty/invisible, do not remove -->
         <div id="recaptcha-container"></div>
 
-        <button id="send-code-btn" type="submit" class="continue-btn">Send code</button>
+        <button id="send-code-btn" type="submit" class="continue-btn" data-i18n="auth.sendCode">Send code</button>
       </form>
 
       <!-- STEP 2: OTP entry — hidden until a code has been sent -->
       <form id="otp-form" novalidate hidden>
         <p class="auth-subtitle" id="otp-sent-to-note"></p>
 
-        <label class="auth-label" for="otp-input">OTP code</label>
+        <label class="auth-label" for="otp-input" data-i18n="auth.otpLabel">OTP code</label>
         <input
           id="otp-input"
           type="text"
           inputmode="numeric"
           autocomplete="one-time-code"
           maxlength="6"
-          placeholder="6-digit code"
-          aria-label="OTP code"
+          data-i18n-attr="aria-label:auth.otpLabel|placeholder:auth.otpPlaceholder"
         />
 
-        <button id="verify-code-btn" type="submit" class="continue-btn">Verify &amp; continue</button>
-        <button id="change-number-btn" type="button" class="link-btn">Use a different number</button>
+        <button id="verify-code-btn" type="submit" class="continue-btn" data-i18n="auth.verify">Verify &amp; continue</button>
+        <button id="change-number-btn" type="button" class="link-btn" data-i18n="auth.changeNumber">Use a different number</button>
       </form>
 
-      <p class="auth-footnote">No password needed — just your number and a code, every time.</p>
+      <p class="auth-footnote" data-i18n="auth.footnote">No password needed — just your number and a code, every time.</p>
     </main>
 
   </div>

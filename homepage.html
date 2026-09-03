@@ -13,30 +13,31 @@
 <body class="landing-body">
 
   <header class="landing-header">
-    <a href="index.html" aria-label="Panah chat par jaayein">
+    <a href="homepage.html" aria-label="Panah home">
       <img src="logo-side.png" alt="Panah" class="landing-header-logo" />
     </a>
-    <a href="index.html" class="landing-header-cta">Baat karein</a>
+    <nav class="landing-nav" aria-label="Main navigation">
+      <a href="homepage.html" class="active" data-i18n="nav.home">Home</a>
+      <a href="about.html" data-i18n="nav.about">About</a>
+      <a href="contact.html" data-i18n="nav.contact">Contact</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacy</a>
+      <a href="index.html" class="landing-nav-chat" data-i18n="nav.chat">Chat</a>
+    </nav>
   </header>
 
   <main>
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-content">
         <img src="logo.png" alt="Panah logo" class="hero-logo" />
-        <h1 id="hero-title" class="hero-title">Aapka mehfooz sahara</h1>
-        <p class="hero-subtitle">
+        <h1 id="hero-title" class="hero-title" data-i18n="hero.title">Aapka mehfooz sahara</h1>
+        <p class="hero-subtitle" data-i18n="hero.subtitle">
           Mehr, Nafaqa, aur fraud se bachao ke sawaalon ka seedha jawab —
           apni zubaan mein, bina kisi judgement ke.
         </p>
-        <a href="index.html" class="cta-primary">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-          </svg>
-          Panah se poochein
-        </a>
+        <a href="index.html" class="cta-primary" data-i18n="hero.cta">Panah se poochein</a>
       </div>
 
-      <div class="hero-arch" aria-hidden="true">
+      <div class="arch-decoration" aria-hidden="true">
         <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M20 120V70a80 80 0 0 1 160 0v50" stroke="#B4866C" stroke-width="16" stroke-linecap="round"/>
           <path d="M60 120V75a40 40 0 0 1 80 0v45" stroke="#1F3E43" stroke-width="16" stroke-linecap="round"/>
@@ -45,7 +46,7 @@
     </section>
 
     <section class="landing-section topics" aria-labelledby="topics-title">
-      <h2 id="topics-title" class="landing-section-title">Kis cheez mein madad chahiye?</h2>
+      <h2 id="topics-title" class="landing-section-title" data-i18n="topics.title">Kis cheez mein madad chahiye?</h2>
       <div class="topics-grid">
         <article class="topic-card">
           <div class="topic-icon" aria-hidden="true">
@@ -54,8 +55,8 @@
               <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
             </svg>
           </div>
-          <h3 class="topic-title">Mehr</h3>
-          <p class="topic-desc">
+          <h3 class="topic-title" data-i18n="topics.mehr.title">Mehr</h3>
+          <p class="topic-desc" data-i18n="topics.mehr.desc">
             Shadi ke waqt aapka haq. Jaanein kab, kaise, aur kis shakal mein ye aapko milta hai.
           </p>
         </article>
@@ -67,8 +68,8 @@
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
           </div>
-          <h3 class="topic-title">Nafaqa</h3>
-          <p class="topic-desc">
+          <h3 class="topic-title" data-i18n="topics.nafaqa.title">Nafaqa</h3>
+          <p class="topic-desc" data-i18n="topics.nafaqa.desc">
             Apne guzare ke liye kharcha. Samajhein apna haq aur kahan se madad mil sakti hai.
           </p>
         </article>
@@ -80,8 +81,8 @@
               <path d="m9 12 2 2 4-4"/>
             </svg>
           </div>
-          <h3 class="topic-title">Scam se bachao</h3>
-          <p class="topic-desc">
+          <h3 class="topic-title" data-i18n="topics.scam.title">Scam se bachao</h3>
+          <p class="topic-desc" data-i18n="topics.scam.desc">
             Jhoothi calls, prize messages, aur fraud schemes se pehchaanein aur apne aapko bachayein.
           </p>
         </article>
@@ -89,13 +90,13 @@
     </section>
 
     <section class="landing-section how-it-works" aria-labelledby="steps-title">
-      <h2 id="steps-title" class="landing-section-title">Kaise kaam karti hai?</h2>
+      <h2 id="steps-title" class="landing-section-title" data-i18n="steps.title">Kaise kaam karti hai?</h2>
       <div class="steps">
         <div class="step">
           <span class="step-number" aria-hidden="true">1</span>
           <div>
-            <h3 class="step-title">Apna sawaal poochhein</h3>
-            <p class="step-body">
+            <h3 class="step-title" data-i18n="steps.step1.title">Apna sawaal poochhein</h3>
+            <p class="step-body" data-i18n="steps.step1.body">
               Likh kar bhejein ya mic dabaa kar bolein — Urdu, Roman Urdu, ya English mein.
             </p>
           </div>
@@ -103,8 +104,8 @@
         <div class="step">
           <span class="step-number" aria-hidden="true">2</span>
           <div>
-            <h3 class="step-title">Panah sunegi</h3>
-            <p class="step-body">
+            <h3 class="step-title" data-i18n="steps.step2.title">Panah sunegi</h3>
+            <p class="step-body" data-i18n="steps.step2.body">
               Aapka sawaal samajh kar sahi, bharosemand information dhoondegi.
             </p>
           </div>
@@ -112,8 +113,8 @@
         <div class="step">
           <span class="step-number" aria-hidden="true">3</span>
           <div>
-            <h3 class="step-title">Seedha guidance paayein</h3>
-            <p class="step-body">
+            <h3 class="step-title" data-i18n="steps.step3.title">Seedha guidance paayein</h3>
+            <p class="step-body" data-i18n="steps.step3.body">
               Aasan lafzon mein jawab, awaz mein sunnay ke liye bhi — kisi technical jargon ke baghair.
             </p>
           </div>
@@ -122,7 +123,7 @@
     </section>
 
     <section class="landing-section trust-note" aria-label="Privacy and safety">
-      <p>
+      <p data-i18n-html="trust.note">
         <strong>Aapki baat private hai.</strong><br />
         Koi judgement nahi, kisi ko report nahi — sirf aapki madad ke liye ek mehfooz jagah.
       </p>
@@ -130,9 +131,55 @@
   </main>
 
   <footer class="landing-footer">
-    <p>Panah — aapka mehfooz sahara.</p>
-    <a href="index.html" class="cta-secondary">Abhi baat karein</a>
+    <div class="landing-footer-inner">
+      <img src="logo-side.png" alt="Panah" class="landing-footer-logo" />
+      <nav class="landing-footer-nav" aria-label="Footer navigation">
+        <a href="homepage.html" data-i18n="nav.home">Home</a>
+        <a href="about.html" data-i18n="nav.about">About</a>
+        <a href="contact.html" data-i18n="nav.contact">Contact</a>
+        <a href="privacy.html" data-i18n="nav.privacy">Privacy</a>
+        <a href="index.html" data-i18n="nav.chat">Chat</a>
+      </nav>
+      <p class="landing-footer-copy" data-i18n="footer.tagline">Panah — aapka mehfooz sahara.</p>
+    </div>
   </footer>
 
+  <!-- Entry popups: language choice, then login/guest choice -->
+  <div id="entry-overlay" class="entry-overlay" hidden>
+    <div class="entry-modal" id="lang-modal" hidden>
+      <div class="arch-decoration" aria-hidden="true">
+        <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 120V70a80 80 0 0 1 160 0v50" stroke="#B4866C" stroke-width="16" stroke-linecap="round"/>
+          <path d="M60 120V75a40 40 0 0 1 80 0v45" stroke="#1F3E43" stroke-width="16" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 data-i18n="entry.langTitle">Apni zubaan chunein</h2>
+      <p data-i18n="entry.langSubtitle">Panah ussi zubaan mein jawab degi.</p>
+      <div class="entry-options">
+        <button class="entry-option" data-lang-select="ur" type="button">اردو</button>
+        <button class="entry-option" data-lang-select="en" type="button">English</button>
+        <button class="entry-option" data-lang-select="roman" type="button">Roman Urdu</button>
+      </div>
+      <button class="entry-skip" id="lang-skip" type="button" data-i18n="entry.langSkip">Urdu mein jari rakhein</button>
+    </div>
+
+    <div class="entry-modal" id="entry-modal" hidden>
+      <div class="arch-decoration" aria-hidden="true">
+        <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 120V70a80 80 0 0 1 160 0v50" stroke="#B4866C" stroke-width="16" stroke-linecap="round"/>
+          <path d="M60 120V75a40 40 0 0 1 80 0v45" stroke="#1F3E43" stroke-width="16" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 data-i18n="entry.entryTitle">Log in ya guest?</h2>
+      <p data-i18n="entry.entrySubtitle">Login se guftagu save hogi; guest mein mukammal access hai.</p>
+      <div class="entry-actions">
+        <button class="entry-action-primary" id="entry-login" type="button" data-i18n="entry.login">Phone se log in karein</button>
+        <button class="entry-action-secondary" id="entry-guest" type="button" data-i18n="entry.guest">Mehmaan ke tor par jari rakhein</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="entry.js"></script>
 </body>
 </html>

@@ -11,11 +11,12 @@
 
 /* ---------- CSS Custom Properties (easy theming) ---------- */
 :root {
-  --cream:    #f5f3f1;
+  --cream:    #F8F5F2;
   --copper:   #b4866c;
   --teal:     #1f3e43;
   --gray:     #787570;
   --maroon:         #5b2c36;
+  --maroon-dark:    #4a232c;
   --secondary-teal: #142f33;
   --wa-green:       #dcf8c6;
   --white:    #ffffff;
@@ -148,7 +149,7 @@ html, body {
   transition: background-color 0.15s;
 }
 .history-item:hover   { background-color: rgba(245, 243, 241, 0.1); }
-.history-item.active  { background-color: rgba(180, 134, 108, 0.35); }
+.history-item.active  { background-color: rgba(91, 44, 54, 0.35); }
 
 .sidebar-empty-note {
   font-size: 0.78rem;
@@ -410,11 +411,11 @@ html, body {
   padding: 12px 12px 8px;
   scroll-behavior: smooth;
 
-  /* Subtle WhatsApp-style chat wallpaper tint */
-  background-color: #ede8e2;
+  /* Warm, subtle chat background that sits on the new cream page */
+  background-color: var(--cream);
   background-image:
     radial-gradient(ellipse at 20% 80%, rgba(180, 134, 108, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(31,  62,  67, 0.06) 0%, transparent 60%);
+    radial-gradient(ellipse at 80% 20%, rgba(91, 44, 54, 0.05) 0%, transparent 60%);
 
   /* Firefox scrollbar */
   scrollbar-width: thin;
@@ -497,7 +498,7 @@ html, body {
   gap: 8px;
   padding: 8px 10px;
   padding-bottom: calc(8px + var(--safe-bottom));
-  background-color: #f0ebe5;
+  background-color: var(--cream);
   border-top: 1px solid rgba(31, 62, 67, 0.1);
   flex-shrink: 0;
 }
@@ -556,7 +557,7 @@ html, body {
   color: var(--cream);
   border-radius: 50%;
 }
-.send-btn:hover   { background-color: #17333a; color: var(--cream); }
+.send-btn:hover   { background-color: var(--secondary-teal); color: var(--cream); }
 .send-btn:active  { background-color: #0f2428; }
 .send-btn:disabled {
   background-color: var(--gray);
@@ -570,7 +571,7 @@ html, body {
   height: 42px;
   color: var(--teal);
 }
-#mic-btn:hover { background-color: rgba(31, 62, 67, 0.08); }
+#mic-btn:hover { background-color: rgba(91, 44, 54, 0.1); }
 
 #mic-btn.recording {
   color: var(--danger);
@@ -656,7 +657,7 @@ html, body {
 
 /* Very wide screens — center the app with side margins, sidebar persists inline */
 @media (min-width: 900px) {
-  body { background-color: #d9d2ca; }
+  body { background-color: #E8E2DB; }
   #layout { align-items: center; justify-content: center; }
   #sidebar {
     border-radius: 16px 0 0 16px;
