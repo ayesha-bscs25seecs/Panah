@@ -531,6 +531,29 @@ def build_history_messages(history: list | None) -> list:
     return messages
 
 
+def _is_likely_followup_reply(text: str) -> bool:
+    """True for very short replies (roughly 3 words or fewer) that are too
+    short to carry real searchable content on their own — regardless of
+    script/language, since this checks word count, not specific words like
+    "yes"/"haan". Deliberately narrow: this is what limits the fallback below
+    to short acknowledgements only, not to genuine (if terse) new questions."""
+    return len(text.split()) <= 3
+
+
+def _get_last_bot_message(history: list | None) -> str | None:
+    """Return the text of the most recent bot/assistant turn in `history`,
+    if any. Same {sender, text} shape as build_history_messages above."""
+    if not history:
+        return None
+    for item in reversed(history):
+        if not isinstance(item, dict):
+            continue
+        sender = item.get("sender") or item.get("role")
+        text = item.get("text") or item.get("content")
+        if sender in ("bot", "assistant") and isinstance(text, str) and text.strip():
+            return text.strip()
+    return None
+
 # --- Simple language detection for the NO-MATCH fallback message only ------
 # (When an LLM call happens, the LLM itself handles language-matching per the
 # LANGUAGE RULE in SYSTEM_PROMPT — this heuristic is only needed for the
@@ -716,6 +739,19 @@ def ask():
     # original wording may actually match keywords better than a paraphrase.
     if not matched_entry and search_query != user_question:
         matched_entry = kb.get_best_match(user_question)
+
+    # Still nothing? If this looks like a bare follow-up reply ("yes",
+    # "haan", "ok"...) rather than a real question, retry using OUR OWN last
+    # message as the search subject instead — see the two helpers above for
+    # why. This only fires when both attempts above already failed, so it
+    # can't change the outcome for anything that already matched normally.
+    if not matched_entry and _is_likely_followup_reply(user_question):
+        last_bot_message = _get_last_bot_message(history)
+        if last_bot_message:
+            followup_match = kb.get_best_match(last_bot_message)
+            if followup_match:
+                matched_entry = followup_match
+                search_query = last_bot_message
 
     if not matched_entry:
         logger.info("No confident match for question: %r", user_question)
