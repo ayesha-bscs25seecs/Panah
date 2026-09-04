@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer, util
 KB_PATH = Path(__file__).parent / "knowledge_base.json"
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-DEFAULT_SIMILARITY_THRESHOLD = 0.65
+DEFAULT_SIMILARITY_THRESHOLD = 0.3
 
 
 class KnowledgeBase:
