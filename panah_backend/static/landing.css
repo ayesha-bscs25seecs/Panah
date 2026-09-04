@@ -70,8 +70,10 @@ body.landing-body {
 }
 
 .landing-header-logo {
-  height: 40px;
+  height: 64px;
   width: auto;
+  max-width: 220px;
+  object-fit: contain;
   display: block;
 }
 
@@ -224,8 +226,10 @@ body.landing-body {
 }
 
 .landing-footer-logo {
-  height: 46px;
+  height: 76px;
   width: auto;
+  max-width: 240px;
+  object-fit: contain;
   opacity: 0.95;
 }
 
@@ -313,7 +317,7 @@ body.landing-body {
 }
 
 .hero-logo {
-  width: 180px;
+  width: 280px;
   height: auto;
   margin: 0 auto 22px;
 }
@@ -732,11 +736,11 @@ body.landing-body {
   }
 
   .landing-header { padding: 14px 28px; }
-  .landing-header-logo { height: 44px; }
+  .landing-header-logo { height: 72px; max-width: 240px; }
   .landing-nav { display: flex; }
 
   .hero { padding: 88px var(--section-pad-x) 110px; }
-  .hero-logo { width: 230px; }
+  .hero-logo { width: 340px; }
   .hero-title { font-size: 2.35rem; }
   .hero-subtitle { font-size: 1.15rem; }
 
