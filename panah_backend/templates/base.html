@@ -13,14 +13,15 @@
   Routes pass active_page="home"|"about"|"contact"|"privacy" so the
   nav can highlight the current link.
 #}
+
 <!DOCTYPE html>
 <html lang="ur" dir="ltr" class="landing-body">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="{% block description %}Panah — aapka mehfooz sahara. Mehr, Nafaqa, aur scams se bachao ke sawaalon ka seedha jawab.{% endblock %}" />
+  <meta name="description" content="{% block description %}Panah — jahan sawal bhi mehfooz hain. Mehr, Nafaqa, aur scams se bachao ke sawaalon ka seedha jawab.{% endblock %}" />
   <meta name="referrer" content="no-referrer" />
-  <title>{% block title %}Panah — Aapka mehfooz sahara{% endblock %}</title>
+  <title>{% block title %}Panah — Jahan sawal bhi mehfooz hain{% endblock %}</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}" />
@@ -28,28 +29,30 @@
 <body class="landing-body">
 
   <header class="landing-header">
-    <a href="{{ url_for('home') }}" aria-label="Panah home">
-      <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" />
-    </a>
+    <div class="header-left">
+      <a href="{{ url_for('home') }}" aria-label="Panah home">
+        <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" />
+      </a>
 
-    <!-- Language switcher — persistent dropdown next to the brand logo -->
-    <div id="lang-switcher" class="lang-switcher">
-      <button id="lang-switcher-btn" class="lang-switcher-btn" type="button"
-              aria-haspopup="true" aria-expanded="false" aria-label="Select language">
-        <svg class="lang-switcher-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        <span id="lang-switcher-label" class="lang-switcher-label">اردو</span>
-        <svg class="lang-switcher-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-      <div id="lang-switcher-dropdown" class="lang-switcher-dropdown" role="menu" aria-label="Language options">
-        <button type="button" class="lang-switcher-option" data-lang="ur" role="menuitem">اردو</button>
-        <button type="button" class="lang-switcher-option" data-lang="en" role="menuitem">English</button>
-        <button type="button" class="lang-switcher-option" data-lang="roman" role="menuitem">Roman Urdu</button>
+      <!-- Language switcher — persistent dropdown next to the brand logo -->
+      <div id="lang-switcher" class="lang-switcher">
+        <button id="lang-switcher-btn" class="lang-switcher-btn" type="button"
+                aria-haspopup="true" aria-expanded="false" aria-label="Select language">
+          <svg class="lang-switcher-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span id="lang-switcher-label" class="lang-switcher-label">اردو</span>
+          <svg class="lang-switcher-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div id="lang-switcher-dropdown" class="lang-switcher-dropdown" role="menu" aria-label="Language options">
+          <button type="button" class="lang-switcher-option" data-lang="ur" role="menuitem">اردو</button>
+          <button type="button" class="lang-switcher-option" data-lang="en" role="menuitem">English</button>
+          <button type="button" class="lang-switcher-option" data-lang="roman" role="menuitem">Roman Urdu</button>
+        </div>
       </div>
     </div>
 
@@ -58,6 +61,7 @@
       <a href="{{ url_for('about') }}" class="{{ 'active' if active_page == 'about' else '' }}" data-i18n="nav.about">About</a>
       <a href="{{ url_for('contact') }}" class="{{ 'active' if active_page == 'contact' else '' }}" data-i18n="nav.contact">Contact</a>
       <a href="{{ url_for('privacy') }}" class="{{ 'active' if active_page == 'privacy' else '' }}" data-i18n="nav.privacy">Privacy</a>
+      <a href="{{ url_for('auth_page') }}" class="landing-nav-login" data-i18n="nav.login">Login</a>
       <a href="{{ url_for('chat_page') }}" class="landing-nav-chat" data-i18n="nav.chat">Chat</a>
     </nav>
   </header>
@@ -74,7 +78,7 @@
         <a href="{{ url_for('privacy') }}" data-i18n="nav.privacy">Privacy</a>
         <a href="{{ url_for('chat_page') }}" data-i18n="nav.chat">Chat</a>
       </nav>
-      <p class="landing-footer-copy" data-i18n="footer.tagline">Panah — aapka mehfooz sahara.</p>
+      <p class="landing-footer-copy" data-i18n="footer.tagline">Panah — jahan sawal bhi mehfooz hain.</p>
     </div>
   </footer>
 

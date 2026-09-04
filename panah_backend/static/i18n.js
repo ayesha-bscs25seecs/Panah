@@ -16,10 +16,11 @@ const I18N = {
       about: "ہمارے بارے میں",
       contact: "رابطہ",
       privacy: "رازداری اور حفاظت",
+      login: "لاگ ان",
       chat: "بات چیت",
     },
     hero: {
-      title: "آپ کا محفوظ سہارا",
+      title: "جہاں سوالات بھی محفوظ ہیں",
       subtitle:
         "مہر، نفقہ، اور دھوکے سے بچاؤ کے سوالات کا سیدھا جواب — اپنی زبان میں، بغیر کسی ججمانٹ کے۔",
       cta: "پناہ سے پوچھیں",
@@ -58,7 +59,7 @@ const I18N = {
       note: "<strong>آپ کی بات نجی ہے۔</strong><br />کوئی judgment نہیں، کسی کو رپورٹ نہیں — صرف آپ کی مدد کے لیے ایک محفوظ جگہ۔",
     },
     footer: {
-      tagline: "پناہ — آپ کا محفوظ سہارا۔",
+      tagline: "پناہ — جہاں سوالات بھی محفوظ ہیں۔",
     },
     entry: {
       langTitle: "اپنی زبان منتخب کریں",
@@ -71,19 +72,35 @@ const I18N = {
       guest: "مہمان کے طور پر جاری رکھیں",
     },
     chat: {
-      subtitle: "آپ کا محفوظ سہارا",
+      appName: "پناہ",
+      subtitle: "جہاں سوالات بھی محفوظ ہیں",
       placeholder: "اپنا سوال لکھیں یا بولیں...",
       micLabel: "اپنا سوال بولیں",
       sendLabel: "بھیجیں",
       speakerLabel: "آواز",
       suggestedTitle: "مثالی سوالات",
       welcome:
-        "السلام علیکم! میں پناہ ہوں — آپ کا محفوظ سہارا۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
       welcomeLoggedIn:
-        "السلام علیکم! میں پناہ ہوں — آپ کا محفوظ سہارا۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
       newChat: "نئی گفتگو",
       historyLabel: "پچھلی گفتگو",
-      myAccount: "میرا اکاؤنٹ",
+      settings: "ترتیبات",
+      welcomeUrdu:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+      welcomeUrduLoggedIn:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+      welcomeEnglish:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+      welcomeEnglishLoggedIn:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+      settingsTitle: "ترتیبات",
+      langPrefLabel: "زبان کی ترجیح",
+      langUrdu: "اردو",
+      langEnglish: "انگریزی",
+      clearHistory: "تمام گفتگو صاف کریں",
+      clearHistoryConfirm: "کیا آپ واقعی تمام محفوظ گفتگو صاف کرنا چاہتی ہیں؟ یہ عمل واپس نہیں ہو سکتا۔",
+      deleteChat: "حذف کریں",
       logout: "لاگ آؤٹ",
       emptyHistory: "ابھی تک کوئی گفتگو محفوظ نہیں ہوئی۔",
       chips: [
@@ -147,10 +164,11 @@ const I18N = {
       about: "About",
       contact: "Contact",
       privacy: "Privacy & Safety",
+      login: "Log in",
       chat: "Chat",
     },
     hero: {
-      title: "Your safe place to ask",
+      title: "Where even questions are safe",
       subtitle:
         "Clear guidance on Mehr, Nafaqa, and scam awareness — in your own language, with no judgment.",
       cta: "Ask Panah",
@@ -189,7 +207,7 @@ const I18N = {
       note: "<strong>Your conversation is private.</strong><br />No judgment, no reporting — just a safe space built to help you.",
     },
     footer: {
-      tagline: "Panah — your safe place to ask.",
+      tagline: "Panah — where even questions are safe.",
     },
     entry: {
       langTitle: "Choose your language",
@@ -202,19 +220,35 @@ const I18N = {
       guest: "Continue as guest",
     },
     chat: {
-      subtitle: "Your safe place to ask",
+      appName: "Panah",
+      subtitle: "Where even questions are safe",
       placeholder: "Type or speak your question...",
       micLabel: "Speak your question",
       sendLabel: "Send",
       speakerLabel: "Voice",
       suggestedTitle: "Example questions",
       welcome:
-        "Assalamu Alaikum! I am Panah — your safe place to ask. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
       welcomeLoggedIn:
-        "Assalamu Alaikum! I am Panah — your safe place to ask. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
       newChat: "New chat",
       historyLabel: "Past chats",
-      myAccount: "My account",
+      settings: "Settings",
+      welcomeUrdu:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+      welcomeUrduLoggedIn:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+      welcomeEnglish:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+      welcomeEnglishLoggedIn:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+      settingsTitle: "Settings",
+      langPrefLabel: "Language preference",
+      langUrdu: "Urdu",
+      langEnglish: "English",
+      clearHistory: "Clear all chat history",
+      clearHistoryConfirm: "Are you sure you want to clear all saved chats? This cannot be undone.",
+      deleteChat: "Delete",
       logout: "Log out",
       emptyHistory: "No chats saved yet.",
       chips: [
@@ -278,10 +312,11 @@ const I18N = {
       about: "Hamare baare mein",
       contact: "Rabta",
       privacy: "Privacy aur Hifazat",
+      login: "Log in",
       chat: "Baat cheet",
     },
     hero: {
-      title: "Aapki mehfooz jagah sawaal poochhne ki",
+      title: "Jahan sawal bhi mehfooz hain",
       subtitle:
         "Mehr, Nafaqa, aur scam se bachao ke sawaalon ka seedha jawab — apni zubaan mein, bina kisi judgement ke.",
       cta: "Panah se poochein",
@@ -320,7 +355,7 @@ const I18N = {
       note: "<strong>Aapki baat private hai.</strong><br />Koi judgement nahi, kisi ko report nahi — sirf aapki madad ke liye ek mehfooz jagah.",
     },
     footer: {
-      tagline: "Panah — aapka mehfooz sahara.",
+      tagline: "Panah — jahan sawal bhi mehfooz hain.",
     },
     entry: {
       langTitle: "Apni zubaan chunein",
@@ -333,19 +368,35 @@ const I18N = {
       guest: "Mehmaan ke tor par jari rakhein",
     },
     chat: {
-      subtitle: "Aapka mehfooz sahara",
+      appName: "Panah",
+      subtitle: "Jahan sawal bhi mehfooz hain",
       placeholder: "Apna sawaal likhein ya bolein...",
       micLabel: "Apna sawaal bolein",
       sendLabel: "Bhejein",
       speakerLabel: "Awaz",
       suggestedTitle: "Misaali sawaal",
       welcome:
-        "Assalamu Alaikum! Main Panah hoon — aapka mehfooz sahara. Aap mujhse Mehr, Nafaqa, Zakat, virasat ya kisi bhi maali haq ke baare mein poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein. Aapki baat bilkul mehfooz hai — kuch bhi save nahi hota.",
+        "Assalamu Alaikum! Main Panah hoon — jahan sawal bhi mehfooz hain. Aap mujhse Mehr, Nafaqa, Zakat, virasat ya kisi bhi maali haq ke baare mein poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein. Aapki baat bilkul mehfooz hai — kuch bhi save nahi hota.",
       welcomeLoggedIn:
-        "Assalamu Alaikum! Main Panah hoon — aapka mehfooz sahara. Aap mujhse Mehr, Nafaqa, Zakat, virasat ya kisi bhi maali haq ke baare mein poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein.",
+        "Assalamu Alaikum! Main Panah hoon — jahan sawal bhi mehfooz hain. Aap mujhse Mehr, Nafaqa, Zakat, virasat ya kisi bhi maali haq ke baare mein poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein.",
       newChat: "Nayi guftagu",
       historyLabel: "Pichli guftagu",
-      myAccount: "Mera account",
+      settings: "Settings",
+      welcomeUrdu:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+      welcomeUrduLoggedIn:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+      welcomeEnglish:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+      welcomeEnglishLoggedIn:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+      settingsTitle: "Settings",
+      langPrefLabel: "Zubaan ki tarjeeh",
+      langUrdu: "Urdu",
+      langEnglish: "English",
+      clearHistory: "Tamam guftagu saaf karein",
+      clearHistoryConfirm: "Kya aap waali hain ke tamam saved guftagu saaf ho jaye? Yeh wapas nahi ho sakta.",
+      deleteChat: "Delete",
       logout: "Log out",
       emptyHistory: "Abhi tak koi guftagu save nahi hui.",
       chips: [

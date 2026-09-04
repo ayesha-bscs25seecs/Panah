@@ -53,6 +53,7 @@ import re
 import json
 import random
 import logging
+from datetime import datetime
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
 from openai import OpenAI
@@ -168,26 +169,242 @@ else:
 FIREBASE_CREDENTIALS_PATH = os.environ.get(
     "GOOGLE_APPLICATION_CREDENTIALS", "./firebase-service-account.json"
 )
+USING_EMULATOR = bool(os.environ.get("FIREBASE_AUTH_EMULATOR_HOST"))
 
 firebase_app = None
-if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+if USING_EMULATOR:
+    # No real service account needed — the emulator doesn't check real
+    # signatures. projectId just has to match what firebase init used.
+    firebase_app = firebase_admin.initialize_app(options={"projectId": "panah-a1e41"})
+    logger.info(
+        "Firebase Admin running in EMULATOR mode (FIREBASE_AUTH_EMULATOR_HOST=%s).",
+        os.environ["FIREBASE_AUTH_EMULATOR_HOST"],
+    )
+elif os.path.exists(FIREBASE_CREDENTIALS_PATH):
     cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
     firebase_app = firebase_admin.initialize_app(cred)
 else:
     logger.warning(
-        "Firebase service account file not found at %s — /verify-session "
-        "will reject all requests until this is set up.",
+        "Firebase service account file not found at %s, and "
+        "FIREBASE_AUTH_EMULATOR_HOST is not set — /verify-session "
+        "will reject all requests until one of these is configured.",
         FIREBASE_CREDENTIALS_PATH,
     )
+    
+# --- User store (SQLite) ------------------------------------------------
+# Persists across restarts, unlike the old in-memory dict. Single file,
+# no separate DB server needed — fine for a hackathon and easy to grow later.
+import sqlite3
 
-# --- User store --------------------------------------------------------------
-# PLACEHOLDER: plain in-memory dict, keyed by E.164 phone number.
-# This is fine for a hackathon demo but resets on every server restart —
-# same caveat as script.js's chat-history placeholder. Swap for a real DB
-# (SQLite is enough to start) before treating this as a real launch, ideally
-# at the same time chat history gets wired to a real backend too, since both
-# will end up keyed by this same user record.
-users_by_phone = {}
+DB_PATH = "panah_users.db"
+
+
+def _get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = _get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            phone TEXT PRIMARY KEY,
+            firebase_uid TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS chats (
+            id TEXT PRIMARY KEY,
+            phone TEXT NOT NULL,
+            title TEXT,
+            messages TEXT DEFAULT '[]',
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (phone) REFERENCES users(phone)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+def get_user(phone: str):
+    conn = _get_db()
+    row = conn.execute("SELECT * FROM users WHERE phone = ?", (phone,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def save_user(phone: str, firebase_uid: str):
+    conn = _get_db()
+    conn.execute(
+        "INSERT OR IGNORE INTO users (phone, firebase_uid) VALUES (?, ?)",
+        (phone, firebase_uid),
+    )
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+# --- Chat store (SQLite) ------------------------------------------------
+# Persists chat history per logged-in user (keyed by phone number).
+# Every chat endpoint requires a valid Firebase Bearer token, and the
+# per-chat endpoints (GET/PUT/DELETE with an id) enforce an explicit
+# ownership check so one user cannot read or overwrite another's chat.
+
+
+def _get_caller_phone():
+    """Verify the Bearer token from the request's Authorization header
+    and return the caller's phone number, or None if missing/invalid."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    id_token = auth_header[7:]
+    if not id_token or firebase_app is None:
+        return None
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+        return decoded.get("phone_number")
+    except Exception:
+        logger.warning("Bearer token verification failed in chat endpoint")
+        return None
+
+
+def _chat_row(row):
+    """Convert a sqlite3.Row from the chats table into a JSON-safe dict."""
+    if not row:
+        return None
+    d = dict(row)
+    try:
+        d["messages"] = json.loads(d.get("messages", "[]"))
+    except (json.JSONDecodeError, TypeError):
+        d["messages"] = []
+    return d
+
+
+def get_chat_owner(chat_id: str) -> str | None:
+    """Return the phone number that owns this chat, or None if not found."""
+    conn = _get_db()
+    row = conn.execute(
+        "SELECT phone FROM chats WHERE id = ?", (chat_id,)
+    ).fetchone()
+    conn.close()
+    return row["phone"] if row else None
+
+
+def list_chats(phone: str) -> list:
+    """Return summaries (no message bodies) of all chats for a user,
+    newest-first."""
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT id, title, updated_at FROM chats "
+        "WHERE phone = ? ORDER BY updated_at DESC",
+        (phone,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_chat(chat_id: str) -> dict | None:
+    """Return the full chat record (including messages) or None."""
+    conn = _get_db()
+    row = conn.execute(
+        "SELECT id, phone, title, messages, updated_at "
+        "FROM chats WHERE id = ?",
+        (chat_id,),
+    ).fetchone()
+    conn.close()
+    return _chat_row(row)
+
+
+def save_chat(chat_id: str, phone: str, title: str,
+              messages: list | None = None):
+    """Insert or replace a chat.  Caller MUST verify ownership before
+    calling this — the function itself does NOT check."""
+    conn = _get_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO chats (id, phone, title, messages, updated_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (
+            chat_id,
+            phone,
+            title,
+            json.dumps(messages if messages is not None else []),
+            datetime.now().isoformat(),
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_chat(chat_id: str):
+    """Delete a chat by id.  Caller MUST verify ownership first."""
+    conn = _get_db()
+    conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+    conn.commit()
+    conn.close()
+
+
+@app.route("/chats", methods=["GET"])
+def chats_list():
+    """List all chat summaries for the authenticated user."""
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    return jsonify(list_chats(phone))
+
+
+@app.route("/chats/<chat_id>", methods=["GET"])
+def chats_get(chat_id):
+    """Return the full chat (including messages) if the caller owns it."""
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    owner = get_chat_owner(chat_id)
+    if owner is None or owner != phone:
+        return jsonify({"error": "Chat not found."}), 404
+    chat = get_chat(chat_id)
+    if not chat:
+        return jsonify({"error": "Chat not found."}), 404
+    return jsonify(chat)
+
+
+@app.route("/chats/<chat_id>", methods=["PUT"])
+def chats_put(chat_id):
+    """Create or update a chat, with ownership enforcement.
+
+    - New chat (no existing row): allowed.
+    - Existing row owned by caller: allowed (update).
+    - Existing row owned by someone else: 403 Forbidden.
+    """
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    owner = get_chat_owner(chat_id)
+    if owner is not None and owner != phone:
+        return jsonify({"error": "Forbidden."}), 403
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip() or "Chat"
+    messages = data.get("messages", [])
+    if not isinstance(messages, list):
+        messages = []
+    save_chat(chat_id, phone, title, messages)
+    return jsonify({"success": True})
+
+
+@app.route("/chats/<chat_id>", methods=["DELETE"])
+def chats_delete(chat_id):
+    """Delete a chat if the caller owns it."""
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    owner = get_chat_owner(chat_id)
+    if owner is None or owner != phone:
+        return jsonify({"error": "Chat not found."}), 404
+    delete_chat(chat_id)
+    return jsonify({"success": True})
 
 
 @app.route("/verify-session", methods=["POST"])
@@ -214,10 +431,9 @@ def verify_session():
     if not phone:
         return jsonify({"error": "Token did not contain a phone number."}), 400
 
-    user = users_by_phone.get(phone)
+    user = get_user(phone)
     if user is None:
-        user = {"phone": phone, "firebase_uid": decoded.get("uid")}
-        users_by_phone[phone] = user
+        save_user(phone, decoded.get("uid"))
         logger.info("Created new user record for %s", phone)
     else:
         logger.info("Existing user logged in: %s", phone)
@@ -413,17 +629,36 @@ maana jaata hai."
 same four items, folded into one bolded clause, reads like a friend talking \
 instead of a policy handout.)
 
-Example of correctly chunked dual-source answer (broad question, both \
-sources shown, enforcement held back as a follow-up instead of dumped):
+Example of correctly chunked dual-source answer, ENGLISH version (broad \
+question, both sources shown, enforcement held back as a follow-up instead \
+of dumped -- notice EVERY sentence, including the source labels, stays in \
+the same language; never mix an English sentence with a Roman Urdu label \
+or vice versa):
 
 "Nafaqa is a wife's right to **financial maintenance** from her husband — \
 shelter, food, clothing, and essential living expenses.
 
-Islam mein: Surah An-Nisa 4:34 places this responsibility on the husband as \
+In Islam: Surah An-Nisa 4:34 places this responsibility on the husband as \
 part of his role of care, not control.
 
-Pakistan ke qanoon mein: under the **MFLO 1961**, this is a legally \
-enforceable right.
+Under Pakistani law: the **MFLO 1961** makes this a legally enforceable \
+right.
+
+Would you like to know what can be done if a husband refuses to pay \
+nafaqa?"
+
+Example of the SAME answer, ROMAN URDU version (use this shape instead \
+whenever the LANGUAGE RULE says to reply in Roman Urdu -- again, every \
+sentence and label stays in Roman Urdu, none of it reverts to English):
+
+"Nafaqa aap ka haq hai apne shohar se — is mein **rehaish, khana, kapda, \
+aur zaroori kharche** shaamil hain.
+
+Islam mein: Surah An-Nisa 4:34 mein yeh zimmedari shohar par daali gayi \
+hai, uski dekhbhaal ke kirdar ke hissay ke tor par, na ke control ke.
+
+Pakistan ke qanoon mein: **MFLO 1961** ke tehat yeh aik qanooni tor par \
+lagoo hone wala haq hai.
 
 Kya aap jaanna chahti hain ke agar shohar nafaqa na de to kya kiya ja sakta \
 hai?"
@@ -513,6 +748,29 @@ def build_history_messages(history: list | None) -> list:
             messages.append({"role": role, "content": text.strip()})
     return messages
 
+
+def _is_likely_followup_reply(text: str) -> bool:
+    """True for very short replies (roughly 3 words or fewer) that are too
+    short to carry real searchable content on their own — regardless of
+    script/language, since this checks word count, not specific words like
+    "yes"/"haan". Deliberately narrow: this is what limits the fallback below
+    to short acknowledgements only, not to genuine (if terse) new questions."""
+    return len(text.split()) <= 3
+
+
+def _get_last_bot_message(history: list | None) -> str | None:
+    """Return the text of the most recent bot/assistant turn in `history`,
+    if any. Same {sender, text} shape as build_history_messages above."""
+    if not history:
+        return None
+    for item in reversed(history):
+        if not isinstance(item, dict):
+            continue
+        sender = item.get("sender") or item.get("role")
+        text = item.get("text") or item.get("content")
+        if sender in ("bot", "assistant") and isinstance(text, str) and text.strip():
+            return text.strip()
+    return None
 
 # --- Simple language detection for the NO-MATCH fallback message only ------
 # (When an LLM call happens, the LLM itself handles language-matching per the
@@ -699,6 +957,19 @@ def ask():
     # original wording may actually match keywords better than a paraphrase.
     if not matched_entry and search_query != user_question:
         matched_entry = kb.get_best_match(user_question)
+
+    # Still nothing? If this looks like a bare follow-up reply ("yes",
+    # "haan", "ok"...) rather than a real question, retry using OUR OWN last
+    # message as the search subject instead — see the two helpers above for
+    # why. This only fires when both attempts above already failed, so it
+    # can't change the outcome for anything that already matched normally.
+    if not matched_entry and _is_likely_followup_reply(user_question):
+        last_bot_message = _get_last_bot_message(history)
+        if last_bot_message:
+            followup_match = kb.get_best_match(last_bot_message)
+            if followup_match:
+                matched_entry = followup_match
+                search_query = last_bot_message
 
     if not matched_entry:
         logger.info("No confident match for question: %r", user_question)

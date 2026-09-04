@@ -12,14 +12,11 @@
  *  - Guests: nothing is stored or logged client-side (privacy-by-default)
  *  - Logged-in users: left sidebar with "New chat" + chat history
  *
- * CHAT HISTORY — PLACEHOLDER ONLY, NOT YET WIRED TO A BACKEND
- *  The sidebar's history list, save, and load logic below (see SIDEBAR /
- *  CHAT HISTORY section) currently just holds chats in an in-memory array
- *  (`allChatsPlaceholder`). It is NOT persisted anywhere — a page reload
- *  clears it, same as a guest's chat. This is intentional: it exists so
- *  the UI is demoable and the real logic can be dropped in later without
- *  restructuring the rest of the file. Every spot that needs real backend
- *  calls (save chat, list chats, load one chat) is marked "TODO(backend)".
+ * CHAT HISTORY — PERSISTED VIA BACKEND FOR LOGGED-IN USERS
+ *  The sidebar's history list is loaded from the server (GET /chats)
+ *  and individual chats are saved (PUT /chats/:id) using the Firebase
+ *  ID token for authentication.  Guest users never trigger these calls
+ *  — their chats remain ephemeral and vanish on reload.
  *
  * LOGIN STATE
  *  auth.html is expected to set localStorage["panah_logged_in"] = "1"
@@ -86,6 +83,7 @@ const WELCOME_MESSAGE_LOGGED_IN =
 /** localStorage keys — login state only. Chat history is NOT stored here. */
 const LS_LOGIN_FLAG   = "panah_logged_in";
 const LS_USER_LABEL   = "panah_user_label";
+const LS_LANG_PREF    = "panah_lang_pref";
 
 /* ===================================================================
    2. DOM REFERENCES
@@ -100,7 +98,6 @@ const speakerOnIcon    = document.getElementById("speaker-on-icon");
 const speakerOffIcon   = document.getElementById("speaker-off-icon");
 const typingHeader     = document.getElementById("typing-indicator-header");
 const subtitleText     = document.getElementById("subtitle-text");
-const continueLink     = document.getElementById("continue-link");
 const suggestedChips   = document.getElementById("suggested-chips");
 
 const sidebar           = document.getElementById("sidebar");
@@ -108,8 +105,12 @@ const sidebarToggleBtn  = document.getElementById("sidebar-toggle-btn");
 const sidebarOverlay    = document.getElementById("sidebar-overlay");
 const newChatBtn        = document.getElementById("new-chat-btn");
 const historyListEl     = document.getElementById("chat-history-list");
-const sidebarProfileLbl = document.getElementById("sidebar-profile-label");
-const logoutBtn         = document.getElementById("logout-btn");
+const settingsBtn          = document.getElementById("settings-btn");
+const settingsOverlay      = document.getElementById("settings-overlay");
+const settingsCloseBtn     = document.getElementById("settings-close-btn");
+const settingsLangSelect   = document.getElementById("settings-lang-select");
+const settingsClearHistBtn = document.getElementById("settings-clear-history-btn");
+const logoutBtn            = document.getElementById("logout-btn");
 
 /* ===================================================================
    3. APPLICATION STATE
@@ -153,6 +154,22 @@ let currentChatId = null;
  * Shape stays the same either way: { id, title, messages, updatedAt }
  */
 let allChatsPlaceholder = [];
+
+// --- Firebase (for auth token in chat API calls) -----------------------
+// Option A: load the Firebase SDKs in index.html so we can call
+// firebase.auth().currentUser.getIdToken() directly with automatic
+// token refresh, instead of caching an expiring token in localStorage.
+if (typeof firebase !== "undefined" && !firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyDoyX59MXO6I_pBpgoe1hfRrNHDsrLQM-8",
+    authDomain: "panah-a1e41.firebaseapp.com",
+    projectId: "panah-a1e41",
+    storageBucket: "panah-a1e41.firebasestorage.app",
+    messagingSenderId: "362734433731",
+    appId: "1:362734433731:web:9746268a74eef65a073976",
+  });
+  firebase.auth().useEmulator("http://127.0.0.1:9099");
+}
 
 /* ===================================================================
    4. UTILITY HELPERS
@@ -272,7 +289,7 @@ function hideTypingIndicator() {
    6. BACKEND API CALLS
    =================================================================== */
 
-async function askBackend(question) {
+async function askBackend(question, history) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -280,7 +297,7 @@ async function askBackend(question) {
     const response = await fetch(`${API_BASE}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, history }),
       signal: controller.signal,
     });
 
@@ -328,7 +345,7 @@ async function handleSend() {
     currentChatId = generateChatId();
   }
 
-  appendMessage(question, "user");
+    appendMessage(question, "user");
   setSuggestedChipsVisible(false);
 
   isWaiting = true;
@@ -336,7 +353,11 @@ async function handleSend() {
   showTypingIndicator();
 
   try {
-    const { ok, status, data } = await askBackend(question);
+    // `currentMessages` already includes the question we just appended above
+    // (see appendMessage) — drop that last entry so it isn't sent twice:
+    // once as its own "history" turn and again as the "question" field.
+    const priorHistory = currentMessages.slice(0, -1);
+    const { ok, status, data } = await askBackend(question, priorHistory);
 
     hideTypingIndicator();
 
@@ -385,7 +406,14 @@ async function handleSend() {
 function renderSuggestedChips() {
   if (!suggestedChips) return;
 
-  const chips = UI_STRINGS.chips || [];
+  // Read chips from the current i18n language (not the frozen UI_STRINGS)
+  // so they update live when the user changes the language preference.
+  const currentLang =
+    window.PanahI18n ? window.PanahI18n.getLang() : UI_LANG;
+  const chips =
+    (window.PanahI18n && window.PanahI18n.I18N[currentLang]
+      ? window.PanahI18n.I18N[currentLang].chat.chips
+      : null) || UI_STRINGS.chips || [];
 
   suggestedChips.innerHTML = "";
   chips.forEach(({ topic, text }) => {
@@ -578,22 +606,70 @@ function toggleSpeaker() {
    =================================================================== */
 
 /**
- * Reads all saved chats for the logged-in user.
- * TODO(backend): replace with e.g. `await fetch(`${API_BASE}/chats`)`
- * and return the parsed JSON list instead of the in-memory array.
+ * Fetches all chat summaries for the logged-in user from the server.
+ * Returns [] for guests or if the API call fails.
  */
-function loadAllChats() {
-  return allChatsPlaceholder;
+async function loadAllChats() {
+  if (!isLoggedIn) return [];
+  try {
+    const token = await _getIdToken();
+    if (!token) return [];
+    const res = await fetch(`${API_BASE}/chats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 /**
- * Persists the full chat list.
- * TODO(backend): replace with a real save call — likely per-chat
- * (`POST /chats` / `PUT /chats/:id`) rather than resending the whole
- * list every time, once that endpoint exists.
+ * Persists a single chat to the server (upsert).
+ * TODO(backend): could be extended with optimistic local caching, but
+ * the server is the source of truth for now.
  */
-function saveAllChats(chats) {
-  allChatsPlaceholder = chats;
+async function saveAllChats_single(chat) {
+  if (!isLoggedIn) return;
+  try {
+    const token = await _getIdToken();
+    if (!token) return;
+    await fetch(`${API_BASE}/chats/${chat.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title: chat.title, messages: chat.messages }),
+    });
+  } catch {
+    /* silent — best-effort persistence */
+  }
+}
+
+/**
+ * Helper: get a fresh Firebase ID token for the current user.
+ * Returns null if Firebase is unavailable or the user is not signed in.
+ */
+async function _getIdToken() {
+  try {
+    if (typeof firebase === "undefined") return null;
+    const user = firebase.auth().currentUser;
+    return user ? await user.getIdToken() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Helper: make an authenticated API call with Bearer token.
+ */
+async function _api(path, options = {}) {
+  const token = await _getIdToken();
+  if (!token) return null;
+  options.headers = options.headers || {};
+  options.headers.Authorization = `Bearer ${token}`;
+  return fetch(`${API_BASE}${path}`, options);
 }
 
 /** Derives a short title from the first user message in a chat. */
@@ -603,34 +679,23 @@ function deriveChatTitle(messages) {
   return base.length > 40 ? base.slice(0, 40) + "…" : base;
 }
 
-/** Upserts the current in-progress chat into the placeholder store. */
-function saveCurrentChat() {
+/** Upserts the current in-progress chat to the server. */
+async function saveCurrentChat() {
   if (!currentChatId || currentMessages.length === 0) return;
-
-  const chats = loadAllChats();
-  const existingIndex = chats.findIndex((c) => c.id === currentChatId);
-  const chatRecord = {
+  await saveAllChats_single({
     id: currentChatId,
     title: deriveChatTitle(currentMessages),
     messages: currentMessages,
     updatedAt: new Date().toISOString(),
-  };
-
-  if (existingIndex >= 0) {
-    chats[existingIndex] = chatRecord;
-  } else {
-    chats.unshift(chatRecord);
-  }
-
-  saveAllChats(chats);
+  });
   renderHistoryList();
 }
 
-/** Renders the sidebar's chat history list from the placeholder store. */
-function renderHistoryList() {
+/** Renders the sidebar's chat history list from the server. */
+async function renderHistoryList() {
   if (!historyListEl) return;
 
-  const chats = loadAllChats().sort(
+  const chats = (await loadAllChats()).sort(
     (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
   );
 
@@ -641,7 +706,7 @@ function renderHistoryList() {
     note.className = "sidebar-empty-note";
     note.textContent =
       UI_STRINGS.emptyHistory || "Abhi tak koi guftagu save nahi hui.";
-    historyListEl.appendChild(note);
+    historyListEl.append(note);
     return;
   }
 
@@ -649,43 +714,158 @@ function renderHistoryList() {
     const li = document.createElement("li");
     li.className = "history-item";
     li.dataset.chatId = chat.id;
-    li.textContent = chat.title;
+
+    // Chat title (clickable to open the chat)
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "history-item-title";
+    titleSpan.textContent = chat.title;
+    titleSpan.addEventListener("click", () => openChat(chat.id));
+
+    // 3-dot menu for per-chat actions
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "history-item-actions";
+
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "history-item-menu-btn";
+    menuBtn.setAttribute("aria-label", "Chat options");
+    menuBtn.innerHTML = "&#8942;"; // ⋮
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleChatItemMenu(chat.id, actionsDiv);
+    });
+
+    actionsDiv.appendChild(menuBtn);
+    li.appendChild(titleSpan);
+    li.appendChild(actionsDiv);
+
     if (chat.id === currentChatId) li.classList.add("active");
-    li.addEventListener("click", () => openChat(chat.id));
     historyListEl.appendChild(li);
   });
 }
 
-/** Loads a previously saved chat into the chat area. */
-function openChat(chatId) {
-  const chats = loadAllChats();
-  const chat = chats.find((c) => c.id === chatId);
-  if (!chat) return;
+/**
+ * Toggles the per-chat dropdown menu (currently only "Delete").
+ * Closes any other open menu first so only one is visible at a time.
+ */
+function toggleChatItemMenu(chatId, actionsDiv) {
+  // Close any already-open dropdown
+  const existing = document.querySelector(".history-item-dropdown");
+  if (existing) existing.remove();
 
-  currentChatId = chat.id;
-  currentMessages = [...chat.messages];
+  const dropdown = document.createElement("div");
+  dropdown.className = "history-item-dropdown";
 
-  chatArea.innerHTML = "";
-  currentMessages.forEach((m) => {
-    appendMessage(m.text, m.sender, new Date(m.time), { record: false });
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.textContent = UI_STRINGS.deleteChat || "Delete";
+  deleteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.remove();
+    deleteSingleChat(chatId);
   });
 
-  setSuggestedChipsVisible(false);
+  dropdown.appendChild(deleteBtn);
+  actionsDiv.appendChild(dropdown);
+
+  // Auto-close when clicking anywhere outside the dropdown
+  const closeHandler = (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.remove();
+      document.removeEventListener("click", closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeHandler), 0);
+}
+
+/**
+ * Deletes a single chat from the server and updates the sidebar.
+ * If the deleted chat is the currently open one, starts a fresh chat view.
+ * TODO(backend): replace with a real DELETE /chats/:id API call.
+ */
+async function deleteSingleChat(chatId) {
+  try {
+    const token = await _getIdToken();
+    if (token) {
+      await fetch(`${API_BASE}/chats/${chatId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+  } catch {
+    /* best-effort — UI will still update */
+  }
+
+  if (chatId === currentChatId) {
+    currentChatId = null;
+    currentMessages = [];
+    chatArea.innerHTML = "";
+    const greeting = getWelcomeMessage(isLoggedIn);
+    appendMessage(greeting, "bot", new Date(), { record: false });
+    renderSuggestedChips();
+    setSuggestedChipsVisible(true);
+  }
+
   renderHistoryList();
-  closeSidebarDrawer();
+}
+
+/**
+ * Returns the welcome message based on the user's language preference.
+ * Reads panah_lang_pref from localStorage — "Urdu" shows the Urdu-script
+ * greeting; "English" or unset shows the English greeting.
+ * This does NOT affect the per-message language-detection logic.
+ */
+function getWelcomeMessage(loggedIn) {
+  const pref = localStorage.getItem(LS_LANG_PREF);
+  if (pref === "ur") {
+    return loggedIn
+      ? (UI_STRINGS.welcomeUrduLoggedIn || UI_STRINGS.welcomeUrdu || WELCOME_MESSAGE)
+      : (UI_STRINGS.welcomeUrdu || WELCOME_MESSAGE);
+  }
+  // Default to English (also when pref is unset or "en")
+  return loggedIn
+    ? (UI_STRINGS.welcomeEnglishLoggedIn || UI_STRINGS.welcomeEnglish || WELCOME_MESSAGE_LOGGED_IN)
+    : (UI_STRINGS.welcomeEnglish || WELCOME_MESSAGE);
+}
+
+/** Loads a previously saved chat into the chat area. */
+async function openChat(chatId) {
+  try {
+    const token = await _getIdToken();
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/chats/${chatId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const chat = await res.json();
+
+    currentChatId = chat.id;
+    currentMessages = chat.messages || [];
+
+    chatArea.innerHTML = "";
+    currentMessages.forEach((m) => {
+      appendMessage(m.text, m.sender, new Date(m.time), { record: false });
+    });
+
+    setSuggestedChipsVisible(false);
+    renderHistoryList();
+    closeSidebarDrawer();
+  } catch {
+    /* failed to load — silently stay on current view */
+  }
 }
 
 /** Starts a fresh, empty chat (saving the previous one first, if any). */
-function startNewChat() {
+async function startNewChat() {
   if (isLoggedIn && currentChatId && currentMessages.length > 0) {
-    saveCurrentChat();
+    await saveCurrentChat();
   }
 
   currentChatId = null;
   currentMessages = [];
   chatArea.innerHTML = "";
 
-  const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
+  const greeting = getWelcomeMessage(isLoggedIn);
   appendMessage(greeting, "bot", new Date(), { record: false });
 
   renderSuggestedChips();
@@ -717,18 +897,18 @@ function toggleSidebarDrawer() {
   }
 }
 
-/** Logs the user out: clears the login flag and returns to guest view. */
+/** Logs the user out: clears the login flag and returns to the homepage. */
 function handleLogout() {
   localStorage.removeItem(LS_LOGIN_FLAG);
   localStorage.removeItem(LS_USER_LABEL);
-  window.location.reload();
+  window.location.href = "/";
 }
 
 /**
  * Applies the logged-in vs. guest UI state on load:
- *  - Guest: sidebar + its toggle stay hidden, "Log in" button shows.
- *  - Logged in: sidebar shows (persistent on desktop, drawer on mobile),
- *    the login button is hidden, and saved chat history is rendered.
+ *  - Guest: sidebar + its toggle stay hidden.
+ *  - Logged in: sidebar shows (persistent on desktop, drawer on mobile)
+ *    and saved chat history is rendered.
  */
 function initLoginState() {
   isLoggedIn = localStorage.getItem(LS_LOGIN_FLAG) === "1";
@@ -736,17 +916,105 @@ function initLoginState() {
   if (isLoggedIn) {
     if (sidebar) sidebar.hidden = false;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = false;
-    if (continueLink) continueLink.hidden = true;
 
     const label = localStorage.getItem(LS_USER_LABEL);
-    if (sidebarProfileLbl && label) sidebarProfileLbl.textContent = label;
+    // Settings label is static ("Settings" via i18n) — no dynamic update needed.
 
-    renderHistoryList();
+    // Firebase restores auth state from IndexedDB asynchronously, so
+    // currentUser is null immediately after initializeApp().  We must
+    // wait for onAuthStateChanged to fire before calling getIdToken()
+    // — otherwise every chat API call gets a null token and silently
+    // bails out, and nothing is ever saved or loaded.
+    if (typeof firebase !== "undefined") {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          renderHistoryList();
+        }
+      });
+    }
   } else {
     if (sidebar) sidebar.hidden = true;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = true;
-    if (continueLink) continueLink.hidden = false;
   }
+}
+
+/* ===================================================================
+   11b. SETTINGS PANEL
+   =================================================================== */
+
+/** Opens the settings modal and syncs the language selector. */
+function openSettingsPanel() {
+  if (!settingsOverlay) return;
+  // Sync the dropdown with the stored preference
+  if (settingsLangSelect) {
+    const pref = localStorage.getItem(LS_LANG_PREF);
+    settingsLangSelect.value = pref || "en";
+  }
+  settingsOverlay.hidden = false;
+}
+
+/** Closes the settings modal. */
+function closeSettingsPanel() {
+  if (settingsOverlay) settingsOverlay.hidden = true;
+}
+
+/**
+ * Saves the language preference, syncs the i18n system so all static UI
+ * labels update immediately, and re-renders the suggestion chips.
+ * Does NOT change the per-message reply-language detection logic.
+ */
+function handleLangPrefChange() {
+  if (!settingsLangSelect) return;
+  const value = settingsLangSelect.value; // "ur" or "en"
+  localStorage.setItem(LS_LANG_PREF, value);
+
+  // Sync the i18n system so applyLanguage() uses the new language
+  if (window.PanahI18n) {
+    window.PanahI18n.setLang(value);
+    window.PanahI18n.applyLanguage(value);
+  }
+
+  // Re-render chips with the new language's translations
+  renderSuggestedChips();
+}
+
+/**
+ * Clears ALL chat history after a confirm dialog.
+ * This is a destructive action separate from per-chat delete.
+ * TODO(backend): replace the per-chat DELETE loop with a bulk-clear
+ * API endpoint once available.
+ */
+async function handleClearAllHistory() {
+  const confirmMsg =
+    UI_STRINGS.clearHistoryConfirm ||
+    "Are you sure you want to clear all saved chats? This cannot be undone.";
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const chats = await loadAllChats();
+    for (const chat of chats) {
+      const token = await _getIdToken();
+      if (token) {
+        await fetch(`${API_BASE}/chats/${chat.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    }
+  } catch {
+    /* best-effort deletion */
+  }
+
+  currentChatId = null;
+  currentMessages = [];
+  chatArea.innerHTML = "";
+
+  const greeting = getWelcomeMessage(isLoggedIn);
+  appendMessage(greeting, "bot", new Date(), { record: false });
+  renderSuggestedChips();
+  setSuggestedChipsVisible(true);
+  renderHistoryList();
+  closeSettingsPanel();
 }
 
 /* ===================================================================
@@ -769,6 +1037,17 @@ if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
 if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
 if (sidebarToggleBtn) sidebarToggleBtn.addEventListener("click", toggleSidebarDrawer);
 if (sidebarOverlay) sidebarOverlay.addEventListener("click", closeSidebarDrawer);
+
+// --- Settings panel ---
+if (settingsBtn) settingsBtn.addEventListener("click", openSettingsPanel);
+if (settingsCloseBtn) settingsCloseBtn.addEventListener("click", closeSettingsPanel);
+if (settingsOverlay) {
+  settingsOverlay.addEventListener("click", (e) => {
+    if (e.target === settingsOverlay) closeSettingsPanel();
+  });
+}
+if (settingsLangSelect) settingsLangSelect.addEventListener("change", handleLangPrefChange);
+if (settingsClearHistBtn) settingsClearHistBtn.addEventListener("click", handleClearAllHistory);
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && "speechSynthesis" in window) {
@@ -803,7 +1082,7 @@ function applyChatLanguage() {
   applyChatLanguage();
   renderSuggestedChips();
 
-  const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
+  const greeting = getWelcomeMessage(isLoggedIn);
   appendMessage(greeting, "bot", new Date(), { record: false });
 
   setTimeout(() => {

@@ -36,6 +36,7 @@ const LS_USER_LABEL = "panah_user_label";
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
+auth.useEmulator("http://127.0.0.1:9099");
 
 /* ===================================================================
    2. DOM REFERENCES
@@ -187,7 +188,9 @@ otpForm.addEventListener("submit", async function (e) {
     localStorage.setItem(LS_LOGIN_FLAG, "1");
     localStorage.setItem(LS_USER_LABEL, data.phone || pendingPhoneNumber);
 
-    window.location.href = "homepage.html";
+    // Logged in now — go straight to the chat page (index.html) rather
+    // than the homepage, so the user lands in the logged-in chat directly.
+    window.location.href = "/chat";
   } catch (err) {
     console.error("OTP verification failed:", err);
     showError("Code sahi nahi hai ya expire ho gaya. Dobara koshish karein.");
@@ -209,3 +212,35 @@ changeNumberBtn.addEventListener("click", function () {
   phoneForm.hidden = false;
   phoneInput.focus();
 });
+
+/* ===================================================================
+   9. BACK BUTTON — return to whichever page led here
+   =================================================================== */
+
+const backLink = document.querySelector(".back-link");
+
+if (backLink) {
+  backLink.addEventListener("click", function (e) {
+    // Let modified clicks (open in new tab / new window) use the plain href.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    e.preventDefault();
+
+    // If another page in this tab's history led here (the homepage entry
+    // popup, a nav Login link, ...), go straight back to it.
+    history.back();
+
+    // If auth was opened directly (nothing before it in this tab's history),
+    // history.back() silently does nothing. pagehide only fires once a back
+    // navigation actually leaves this page — so if we are still here after
+    // a short wait, fall back to the link's own href (the homepage).
+    let leftPage = false;
+    window.addEventListener("pagehide", function () {
+      leftPage = true;
+    }, { once: true });
+
+    setTimeout(function () {
+      if (!leftPage) window.location.href = backLink.href;
+    }, 400);
+  });
+}

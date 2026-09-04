@@ -39,16 +39,17 @@
         </ul>
       </nav>
 
-      <!-- Profile / logout, pinned to bottom -->
+      <!-- Settings + logout, pinned to bottom -->
       <div class="sidebar-bottom">
-        <button id="sidebar-profile-btn" class="sidebar-profile" type="button" aria-haspopup="true">
+        <button id="settings-btn" class="sidebar-profile" type="button" aria-haspopup="dialog">
           <span class="profile-avatar" aria-hidden="true">
+            <!-- Gear / cog icon -->
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </span>
-          <span id="sidebar-profile-label" class="profile-label" data-i18n="chat.myAccount">Mera account</span>
+          <span id="sidebar-profile-label" class="profile-label" data-i18n="chat.settings">Settings</span>
         </button>
         <button id="logout-btn" class="sidebar-btn sidebar-btn-ghost" type="button" data-i18n="chat.logout">Log out</button>
       </div>
@@ -89,7 +90,7 @@
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah" class="header-logo-img" />
           </a>
           <div class="header-text">
-            <h1 class="app-name">Panah</h1>
+            <h1 class="app-name" data-i18n="chat.appName">Panah</h1>
             <p class="subtitle" id="subtitle-text" data-i18n="chat.subtitle">aapka mahfooz sahara</p>
             <!-- Typing indicator shown in header while waiting for a reply -->
             <div class="typing-indicator-header" id="typing-indicator-header" aria-live="polite" aria-label="Bot is typing" hidden>
@@ -122,16 +123,6 @@
           </svg>
           <span class="speaker-label" data-i18n="chat.speakerLabel">Awaz</span>
         </button>
-
-        <!-- Continue / log in link — hidden once logged in (script.js) -->
-        <a href="{{ url_for('auth_page') }}" id="continue-link" class="header-btn" aria-label="Continue / log in" title="Continue">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-        </a>
       </header>
 
       <!-- ===== CHAT MESSAGES AREA ===== -->
@@ -197,9 +188,44 @@
     <!-- Overlay for closing the sidebar drawer on mobile by tapping outside it -->
     <div id="sidebar-overlay" hidden></div>
 
+    <!-- ===== SETTINGS PANEL (modal overlay) ===== -->
+    <div id="settings-overlay" class="settings-overlay" hidden>
+      <div id="settings-panel" class="settings-panel" role="dialog" aria-label="Settings" aria-modal="true">
+        <div class="settings-header">
+          <h2 class="settings-title" data-i18n="chat.settingsTitle">Settings</h2>
+          <button id="settings-close-btn" class="settings-close-btn" type="button" aria-label="Close settings">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="settings-body">
+          <!-- Language preference -->
+          <div class="settings-group">
+            <label class="settings-label" data-i18n="chat.langPrefLabel">Language preference</label>
+            <select id="settings-lang-select" class="settings-select">
+              <option value="ur">اردو</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+
+          <!-- Clear chat history -->
+          <div class="settings-group">
+            <button id="settings-clear-history-btn" class="settings-danger-btn" type="button" data-i18n="chat.clearHistory">Clear all chat history</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /#layout -->
 
   <!-- Application logic — vanilla JS, no build tools required -->
+  <!-- Firebase SDKs — needed so script.js can call getIdToken() -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+
   <script src="{{ url_for('static', filename='i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

@@ -49,6 +49,13 @@ body.landing-body {
   border-bottom: 1px solid rgba(31, 62, 67, 0.08);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: visible;
+}
+
 .landing-header-logo {
   height: 40px;
   width: auto;
@@ -72,24 +79,27 @@ body.landing-body {
   text-decoration: none;
   transition: background-color 0.2s, color 0.2s;
 }
+
 .landing-nav a:hover { background-color: rgba(91, 44, 54, 0.08); color: var(--maroon); }
 .landing-nav a.active { background-color: rgba(91, 44, 54, 0.12); color: var(--maroon); }
 
-.landing-nav-chat {
+/* ONLY applies to the Chat button */
+.landing-nav .landing-nav-chat {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
   border-radius: 999px;
   background-color: var(--maroon);
-  color: var(--cream);
+  color: var(--cream); /* Chat text is now cream */
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
   transition: background-color 0.2s, transform 0.1s;
 }
-.landing-nav-chat:hover  { background-color: var(--maroon-dark); }
-.landing-nav-chat:active { transform: scale(0.97); }
+
+.landing-nav .landing-nav-chat:hover  { background-color: rgba(91, 44, 54, 0.08); color: var(--maroon); }
+.landing-nav .landing-nav-chat:active { background-color: rgba(91, 44, 54, 0.12); color: var(--maroon); }
 
 /* ==========================================================================
    LANGUAGE SWITCHER
