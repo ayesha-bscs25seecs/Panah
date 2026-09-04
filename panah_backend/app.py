@@ -514,6 +514,8 @@ school of thought, unless she said so or the verified information establishes \
 it. If the real answer depends on details about her specific situation, ask \
 for them naturally, as part of the conversation — not as a generic "is there \
 anything else" tack-on.
+- NEVER introduce a completely different major subject (such as switching from Inheritance/Mirath to Zakat or Waqf) unless the user explicitly requested it in their current prompt.
+- If the user provides a short continuation (e.g., "yes", "both", "tell me more"), stay strictly within the current topic thread (e.g., mother's share / gifts) and do not switch topics.
 
 USE CONVERSATION HISTORY, DON'T REPEAT YOURSELF:
 - You may be shown recent turns from this same conversation before the current \
@@ -758,20 +760,6 @@ def _is_likely_followup_reply(text: str) -> bool:
     return len(text.split()) <= 3
 
 
-def _get_last_bot_message(history: list | None) -> str | None:
-    """Return the text of the most recent bot/assistant turn in `history`,
-    if any. Same {sender, text} shape as build_history_messages above."""
-    if not history:
-        return None
-    for item in reversed(history):
-        if not isinstance(item, dict):
-            continue
-        sender = item.get("sender") or item.get("role")
-        text = item.get("text") or item.get("content")
-        if sender in ("bot", "assistant") and isinstance(text, str) and text.strip():
-            return text.strip()
-    return None
-
 # --- Simple language detection for the NO-MATCH fallback message only ------
 # (When an LLM call happens, the LLM itself handles language-matching per the
 # LANGUAGE RULE in SYSTEM_PROMPT — this heuristic is only needed for the
@@ -875,6 +863,12 @@ def classify_and_translate(user_question: str) -> dict:
     keywords are English/Roman Urdu only, a raw Urdu-script question would
     otherwise never match anything.
 
+    STEP 1 — pick "language":
+    - Match the exact script and language of the user's latest input.
+    - If the user writes in Roman Urdu (e.g. "Donon mein farq kia hai"), language MUST be "roman_urdu". Do NOT default to Urdu script or English.
+    - If the user writes in Urdu script (e.g. "دونوں میں فرق کیا ہے"), language MUST be "urdu_script".
+    - If the user writes in English, language MUST be "english".
+
     Returns {"language": "english"|"roman_urdu"|"urdu_script", "english_query": str}.
     Falls back to the local heuristic + the original text if the LLM call
     fails or returns something unparseable, so retrieval still runs either way.
@@ -951,25 +945,38 @@ def ask():
     detected_lang = classification["language"]
     search_query = classification["english_query"]
 
+    # ------------------------------------------------------------------
+    # ENHANCEMENT: Append recent context for short / ambiguous queries
+    # ------------------------------------------------------------------
+    if history and len(user_question.split()) <= 5:
+        last_turn = history[-1] if history else {}
+        last_text = last_turn.get("text") or last_turn.get("content", "")
+        if last_text:
+            search_query = f"{last_text} {search_query}"
+
+    # 1. Primary retrieval attempt
     matched_entry = kb.get_best_match(search_query)
-    # If searching the translated/English version found nothing, also try the
-    # raw original text — helps for English/Roman Urdu questions where the
-    # original wording may actually match keywords better than a paraphrase.
+
+    # 2. Direct fallback using raw question
     if not matched_entry and search_query != user_question:
         matched_entry = kb.get_best_match(user_question)
 
-    # Still nothing? If this looks like a bare follow-up reply ("yes",
-    # "haan", "ok"...) rather than a real question, retry using OUR OWN last
-    # message as the search subject instead — see the two helpers above for
-    # why. This only fires when both attempts above already failed, so it
-    # can't change the outcome for anything that already matched normally.
+    # 3. Fallback for bare conversational replies ("yes", "ok", etc.)
     if not matched_entry and _is_likely_followup_reply(user_question):
-        last_bot_message = _get_last_bot_message(history)
-        if last_bot_message:
-            followup_match = kb.get_best_match(last_bot_message)
-            if followup_match:
-                matched_entry = followup_match
-                search_query = last_bot_message
+        last_user_question = None
+        if history:
+            for item in reversed(history):
+                sender = item.get("sender") or item.get("role")
+                text = item.get("text") or item.get("content")
+                if sender in ("user",) and isinstance(text, str) and not _is_likely_followup_reply(text):
+                    last_user_question = text.strip()
+                    break
+        
+        if last_user_question:
+            contextual_query = f"{last_user_question} {user_question}"
+            classification = classify_and_translate(contextual_query)
+            search_query = classification["english_query"]
+            matched_entry = kb.get_best_match(search_query)
 
     if not matched_entry:
         logger.info("No confident match for question: %r", user_question)
@@ -986,12 +993,7 @@ def ask():
         matched_entry["topic_id"], matched_entry["id"],
     )
 
-    # Gather up to 2 other entries from the SAME topic so a broad/general
-    # question (e.g. "tell me about zakat") isn't answered from a single
-    # narrow entry that happened to win the keyword tie-break (e.g. business
-    # Zakat specifically) — see retrieval.py's scoring for why that can
-    # happen on broad queries. Restricted to the matched topic so we don't
-    # pull in unrelated context from a different subject.
+    # Gather up to 2 supporting entries from the same topic
     same_topic_candidates = kb.search(search_query, top_k=8)
     supporting_entries = [
         e for e in same_topic_candidates
@@ -999,8 +1001,6 @@ def ask():
     ][:2]
 
     if client is None:
-        # No API key configured — return the raw matched chunk so the
-        # frontend/demo can still function without a live LLM call.
         return jsonify({
             "answer": matched_entry["answer"],
             "matched_topic": matched_entry["topic_id"],

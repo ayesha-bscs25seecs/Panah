@@ -13,6 +13,25 @@ KB_PATH = Path(__file__).parent / "knowledge_base.json"
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 DEFAULT_SIMILARITY_THRESHOLD = 0.3
 
+# Some "topics" in knowledge_base.json are leftover document scaffolding from
+# the markdown->JSON conversion (a section like "How to Read and Use This
+# Document" or "Full Source List" got treated as its own topic with the raw
+# section text as the "answer"). These aren't real user-facing Q&A -- a
+# question can still embed close enough to one of these to become the top
+# match, which would make the bot answer with a bibliography of law firm
+# names or internal document notes instead of an actual answer. Filtered out
+# at load time so they're never eligible to match.
+_JUNK_TITLE_HINTS = [
+    "how to read", "full source list", "recommended research",
+    "methodology", "q&a bank", "explicit gaps", "next research steps",
+    "separate three layers",
+]
+
+
+def _is_junk_topic(title: str) -> bool:
+    t = title.lower()
+    return any(hint in t for hint in _JUNK_TITLE_HINTS)
+
 
 class KnowledgeBase:
 
@@ -25,9 +44,9 @@ class KnowledgeBase:
 
         self.entries = self._flatten()
 
-        # Focused embedding representation: Topic + Question + Keywords (Excludes long answer bodies to prevent noise)
+        # Updated in retrieval.py
         self.texts_to_embed = [
-            f"Topic: {e['topic_title']} | Question: {e['question']} | Keywords: {' '.join(e['keywords'])}"
+            f"Topic: {e['topic_title']} | Question: {e['question']} | Answer: {e['answer'][:150]} | Keywords: {' '.join(e['keywords'])}"
             for e in self.entries
         ]
 
@@ -43,6 +62,8 @@ class KnowledgeBase:
         """Flatten topics and Q&A items into retrievable entry objects."""
         flat = []
         for topic in self.raw["topics"]:
+            if _is_junk_topic(topic.get("title_en", "")):
+                continue
             topic_context = {
                 "topic_id": topic["id"],
                 "topic_title": topic.get("title_en", topic["id"]),
