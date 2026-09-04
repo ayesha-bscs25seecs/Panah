@@ -84,7 +84,22 @@ const I18N = {
         "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
       newChat: "نئی گفتگو",
       historyLabel: "پچھلی گفتگو",
-      myAccount: "میرا اکاؤنٹ",
+      settings: "ترتیبات",
+      welcomeUrdu:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+      welcomeUrduLoggedIn:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+      welcomeEnglish:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+      welcomeEnglishLoggedIn:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+      settingsTitle: "ترتیبات",
+      langPrefLabel: "زبان کی ترجیح",
+      langUrdu: "اردو",
+      langEnglish: "انگریزی",
+      clearHistory: "تمام گفتگو صاف کریں",
+      clearHistoryConfirm: "کیا آپ واقعی تمام محفوظ گفتگو صاف کرنا چاہتی ہیں؟ یہ عمل واپس نہیں ہو سکتا۔",
+      deleteChat: "حذف کریں",
       logout: "لاگ آؤٹ",
       emptyHistory: "ابھی تک کوئی گفتگو محفوظ نہیں ہوئی۔",
       chips: [
@@ -216,7 +231,22 @@ const I18N = {
         "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
       newChat: "New chat",
       historyLabel: "Past chats",
-      myAccount: "My account",
+      settings: "Settings",
+      welcomeUrdu:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+      welcomeUrduLoggedIn:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+      welcomeEnglish:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+      welcomeEnglishLoggedIn:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+      settingsTitle: "Settings",
+      langPrefLabel: "Language preference",
+      langUrdu: "Urdu",
+      langEnglish: "English",
+      clearHistory: "Clear all chat history",
+      clearHistoryConfirm: "Are you sure you want to clear all saved chats? This cannot be undone.",
+      deleteChat: "Delete",
       logout: "Log out",
       emptyHistory: "No chats saved yet.",
       chips: [
@@ -348,7 +378,22 @@ const I18N = {
         "Assalamu Alaikum! Main Panah hoon — jahan sawal bhi mehfooz hain. Aap mujhse Mehr, Nafaqa, Zakat, virasat ya kisi bhi maali haq ke baare mein poochh sakti hain. Apna sawaal likhein ya mic dabaa kar bolein.",
       newChat: "Nayi guftagu",
       historyLabel: "Pichli guftagu",
-      myAccount: "Mera account",
+      settings: "Settings",
+      welcomeUrdu:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔ آپ کی بات بالکل محفوظ ہے — کچھ بھی save نہیں ہوتا۔",
+      welcomeUrduLoggedIn:
+        "السلام علیکم! میں پناہ ہوں — جہاں سوالات بھی محفوظ ہیں۔ آپ مجھ سے مہر، نفقہ، زکوٰۃ، وراثت یا کسی بھی مالی حق کے بارے میں پوچھ سکتی ہیں۔ اپنا سوال لکھیں یا مائک دبا کر بولیں۔",
+      welcomeEnglish:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak. Your conversation is completely private — nothing is saved.",
+      welcomeEnglishLoggedIn:
+        "Assalamu Alaikum! I am Panah — where even questions are safe. You can ask me about Mehr, Nafaqa, Zakat, inheritance, or any financial right. Type your question or tap the mic to speak.",
+      settingsTitle: "Settings",
+      langPrefLabel: "Zubaan ki tarjeeh",
+      langUrdu: "Urdu",
+      langEnglish: "English",
+      clearHistory: "Tamam guftagu saaf karein",
+      clearHistoryConfirm: "Kya aap waali hain ke tamam saved guftagu saaf ho jaye? Yeh wapas nahi ho sakta.",
+      deleteChat: "Delete",
       logout: "Log out",
       emptyHistory: "Abhi tak koi guftagu save nahi hui.",
       chips: [

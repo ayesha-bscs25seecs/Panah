@@ -83,6 +83,7 @@ const WELCOME_MESSAGE_LOGGED_IN =
 /** localStorage keys — login state only. Chat history is NOT stored here. */
 const LS_LOGIN_FLAG   = "panah_logged_in";
 const LS_USER_LABEL   = "panah_user_label";
+const LS_LANG_PREF    = "panah_lang_pref";
 
 /* ===================================================================
    2. DOM REFERENCES
@@ -104,8 +105,12 @@ const sidebarToggleBtn  = document.getElementById("sidebar-toggle-btn");
 const sidebarOverlay    = document.getElementById("sidebar-overlay");
 const newChatBtn        = document.getElementById("new-chat-btn");
 const historyListEl     = document.getElementById("chat-history-list");
-const sidebarProfileLbl = document.getElementById("sidebar-profile-label");
-const logoutBtn         = document.getElementById("logout-btn");
+const settingsBtn          = document.getElementById("settings-btn");
+const settingsOverlay      = document.getElementById("settings-overlay");
+const settingsCloseBtn     = document.getElementById("settings-close-btn");
+const settingsLangSelect   = document.getElementById("settings-lang-select");
+const settingsClearHistBtn = document.getElementById("settings-clear-history-btn");
+const logoutBtn            = document.getElementById("logout-btn");
 
 /* ===================================================================
    3. APPLICATION STATE
@@ -679,7 +684,7 @@ async function saveCurrentChat() {
   renderHistoryList();
 }
 
-/** Renders the sidebar's chat history list from the placeholder store. */
+/** Renders the sidebar's chat history list from the server. */
 async function renderHistoryList() {
   if (!historyListEl) return;
 
@@ -702,11 +707,118 @@ async function renderHistoryList() {
     const li = document.createElement("li");
     li.className = "history-item";
     li.dataset.chatId = chat.id;
-    li.textContent = chat.title;
+
+    // Chat title (clickable to open the chat)
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "history-item-title";
+    titleSpan.textContent = chat.title;
+    titleSpan.addEventListener("click", () => openChat(chat.id));
+
+    // 3-dot menu for per-chat actions
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "history-item-actions";
+
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "history-item-menu-btn";
+    menuBtn.setAttribute("aria-label", "Chat options");
+    menuBtn.innerHTML = "&#8942;"; // ⋮
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleChatItemMenu(chat.id, actionsDiv);
+    });
+
+    actionsDiv.appendChild(menuBtn);
+    li.appendChild(titleSpan);
+    li.appendChild(actionsDiv);
+
     if (chat.id === currentChatId) li.classList.add("active");
-    li.addEventListener("click", () => openChat(chat.id));
     historyListEl.appendChild(li);
   });
+}
+
+/**
+ * Toggles the per-chat dropdown menu (currently only "Delete").
+ * Closes any other open menu first so only one is visible at a time.
+ */
+function toggleChatItemMenu(chatId, actionsDiv) {
+  // Close any already-open dropdown
+  const existing = document.querySelector(".history-item-dropdown");
+  if (existing) existing.remove();
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "history-item-dropdown";
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.textContent = UI_STRINGS.deleteChat || "Delete";
+  deleteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.remove();
+    deleteSingleChat(chatId);
+  });
+
+  dropdown.appendChild(deleteBtn);
+  actionsDiv.appendChild(dropdown);
+
+  // Auto-close when clicking anywhere outside the dropdown
+  const closeHandler = (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.remove();
+      document.removeEventListener("click", closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeHandler), 0);
+}
+
+/**
+ * Deletes a single chat from the server and updates the sidebar.
+ * If the deleted chat is the currently open one, starts a fresh chat view.
+ * TODO(backend): replace with a real DELETE /chats/:id API call.
+ */
+async function deleteSingleChat(chatId) {
+  try {
+    const token = await _getIdToken();
+    if (token) {
+      await fetch(`${API_BASE}/chats/${chatId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+  } catch {
+    /* best-effort — UI will still update */
+  }
+
+  if (chatId === currentChatId) {
+    currentChatId = null;
+    currentMessages = [];
+    chatArea.innerHTML = "";
+    const greeting = getWelcomeMessage(isLoggedIn);
+    appendMessage(greeting, "bot", new Date(), { record: false });
+    renderSuggestedChips();
+    setSuggestedChipsVisible(true);
+  }
+
+  renderHistoryList();
+}
+
+/**
+ * Returns the welcome message based on the user's language preference.
+ * Reads panah_lang_pref from localStorage — "Urdu" shows the Urdu-script
+ * greeting; "English" or unset shows the English greeting.
+ * This does NOT affect the per-message language-detection logic.
+ */
+function getWelcomeMessage(loggedIn) {
+  const pref = localStorage.getItem(LS_LANG_PREF);
+  if (pref === "ur") {
+    return loggedIn
+      ? (UI_STRINGS.welcomeUrduLoggedIn || UI_STRINGS.welcomeUrdu || WELCOME_MESSAGE)
+      : (UI_STRINGS.welcomeUrdu || WELCOME_MESSAGE);
+  }
+  // Default to English (also when pref is unset or "en")
+  return loggedIn
+    ? (UI_STRINGS.welcomeEnglishLoggedIn || UI_STRINGS.welcomeEnglish || WELCOME_MESSAGE_LOGGED_IN)
+    : (UI_STRINGS.welcomeEnglish || WELCOME_MESSAGE);
 }
 
 /** Loads a previously saved chat into the chat area. */
@@ -746,7 +858,7 @@ async function startNewChat() {
   currentMessages = [];
   chatArea.innerHTML = "";
 
-  const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
+  const greeting = getWelcomeMessage(isLoggedIn);
   appendMessage(greeting, "bot", new Date(), { record: false });
 
   renderSuggestedChips();
@@ -799,7 +911,7 @@ function initLoginState() {
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = false;
 
     const label = localStorage.getItem(LS_USER_LABEL);
-    if (sidebarProfileLbl && label) sidebarProfileLbl.textContent = label;
+    // Settings label is static ("Settings" via i18n) — no dynamic update needed.
 
     // Firebase restores auth state from IndexedDB asynchronously, so
     // currentUser is null immediately after initializeApp().  We must
@@ -817,6 +929,75 @@ function initLoginState() {
     if (sidebar) sidebar.hidden = true;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = true;
   }
+}
+
+/* ===================================================================
+   11b. SETTINGS PANEL
+   =================================================================== */
+
+/** Opens the settings modal and syncs the language selector. */
+function openSettingsPanel() {
+  if (!settingsOverlay) return;
+  // Sync the dropdown with the stored preference
+  if (settingsLangSelect) {
+    const pref = localStorage.getItem(LS_LANG_PREF);
+    settingsLangSelect.value = pref || "en";
+  }
+  settingsOverlay.hidden = false;
+}
+
+/** Closes the settings modal. */
+function closeSettingsPanel() {
+  if (settingsOverlay) settingsOverlay.hidden = true;
+}
+
+/**
+ * Saves the language preference. Only affects the welcome message shown
+ * on new chats — does NOT change the per-message reply-language logic.
+ */
+function handleLangPrefChange() {
+  if (!settingsLangSelect) return;
+  const value = settingsLangSelect.value; // "ur" or "en"
+  localStorage.setItem(LS_LANG_PREF, value);
+}
+
+/**
+ * Clears ALL chat history after a confirm dialog.
+ * This is a destructive action separate from per-chat delete.
+ * TODO(backend): replace the per-chat DELETE loop with a bulk-clear
+ * API endpoint once available.
+ */
+async function handleClearAllHistory() {
+  const confirmMsg =
+    UI_STRINGS.clearHistoryConfirm ||
+    "Are you sure you want to clear all saved chats? This cannot be undone.";
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const chats = await loadAllChats();
+    for (const chat of chats) {
+      const token = await _getIdToken();
+      if (token) {
+        await fetch(`${API_BASE}/chats/${chat.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    }
+  } catch {
+    /* best-effort deletion */
+  }
+
+  currentChatId = null;
+  currentMessages = [];
+  chatArea.innerHTML = "";
+
+  const greeting = getWelcomeMessage(isLoggedIn);
+  appendMessage(greeting, "bot", new Date(), { record: false });
+  renderSuggestedChips();
+  setSuggestedChipsVisible(true);
+  renderHistoryList();
+  closeSettingsPanel();
 }
 
 /* ===================================================================
@@ -839,6 +1020,17 @@ if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
 if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
 if (sidebarToggleBtn) sidebarToggleBtn.addEventListener("click", toggleSidebarDrawer);
 if (sidebarOverlay) sidebarOverlay.addEventListener("click", closeSidebarDrawer);
+
+// --- Settings panel ---
+if (settingsBtn) settingsBtn.addEventListener("click", openSettingsPanel);
+if (settingsCloseBtn) settingsCloseBtn.addEventListener("click", closeSettingsPanel);
+if (settingsOverlay) {
+  settingsOverlay.addEventListener("click", (e) => {
+    if (e.target === settingsOverlay) closeSettingsPanel();
+  });
+}
+if (settingsLangSelect) settingsLangSelect.addEventListener("change", handleLangPrefChange);
+if (settingsClearHistBtn) settingsClearHistBtn.addEventListener("click", handleClearAllHistory);
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && "speechSynthesis" in window) {
@@ -873,7 +1065,7 @@ function applyChatLanguage() {
   applyChatLanguage();
   renderSuggestedChips();
 
-  const greeting = isLoggedIn ? WELCOME_MESSAGE_LOGGED_IN : WELCOME_MESSAGE;
+  const greeting = getWelcomeMessage(isLoggedIn);
   appendMessage(greeting, "bot", new Date(), { record: false });
 
   setTimeout(() => {
