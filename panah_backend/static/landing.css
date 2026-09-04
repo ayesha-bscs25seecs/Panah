@@ -259,6 +259,8 @@ body.landing-body {
   padding: var(--section-pad-y) var(--section-pad-x);
   max-width: var(--max-content);
   margin: 0 auto;
+  border-radius: 25px 25px 0 0; /* Top-Left, Top-Right, Bottom-Right, Bottom-Left */
+  overflow: hidden; /* Ensures child elements (like background images or colors) don't bleed past the rounded corners */
 }
 
 .landing-section-title {
