@@ -1,73 +1,46 @@
 """
-retrieval.py — Keyword-based retrieval for the Panah knowledge base.
-
-How it works (simple, transparent, no ML/embeddings needed):
-1. Load knowledge_base.json once at startup.
-2. Build a flat list of every Q&A entry across all topics, each carrying
-   its own keywords + parent topic's legal/islamic basis + sources.
-3. For an incoming user question, score every entry by counting how many
-   of its keywords appear as substrings in the (lowercased) user question.
-   Also give a small bonus if words from the entry's own "question" field
-   appear in the user question.
-4. Return the single best-matching entry (plus its score), or None if
-   nothing scored above a minimum threshold.
-
-This is intentionally simple and debuggable for a hackathon timeline.
-If you have time later, swapping in embedding-based similarity (e.g.
-sentence-transformers or a hosted embeddings API) would improve fuzzy
-matching, but keyword matching works well for a fixed, curated KB like
-this one where you control the keyword lists.
+retrieval.py — Automated Multilingual Semantic Retrieval & RAG Backend Engine for Panah
+Uses sentence-transformers to match Roman Urdu, Urdu, and English queries automatically.
 """
 
 import json
-import re
 from pathlib import Path
+from typing import Any, Dict, Optional
+from sentence_transformers import SentenceTransformer, util
 
 KB_PATH = Path(__file__).parent / "knowledge_base.json"
 
-# Minimum score for a match to be considered "confident enough" to answer.
-# A score of 0 means "no keywords matched at all" -> treat as no match.
-MIN_SCORE_THRESHOLD = 2
-
-# Common filler words (Roman Urdu + English) that appear in almost every
-# question and should NOT count toward a match on their own — otherwise
-# short, generic questions all look similar to each other.
-STOPWORDS = {
-    # Roman Urdu fillers
-    "kya", "hai", "hain", "mein", "main", "ka", "ki", "ke", "aur", "ya",
-    "se", "ko", "apna", "apni", "apne", "mera", "meri", "mere", "raha",
-    "rahi", "rahe", "kar", "karna", "karti", "karta", "kare", "karein",
-    "sakti", "sakta", "sakte", "bhi", "to", "woh", "yeh", "is", "isay",
-    "koi", "agar", "par", "pe", "liye", "mujhe", "aap", "aapka", "aapki",
-    "aapke", "hoon", "ho", "hoti", "hota", "gaya", "gayi", "gaye", "nahi",
-    # English fillers
-    "the", "a", "an", "do", "i", "my", "and", "or", "of", "in", "on",
-    "to", "for", "is", "are", "am", "it", "if", "can", "what", "how",
-}
-
-
-def _normalize(text: str) -> str:
-    """Lowercase and strip punctuation for simple substring matching."""
-    text = text.lower()
-    text = re.sub(r"[^\w\s]", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def _content_words(text: str) -> set:
-    """Words from text with stopwords removed and short words dropped."""
-    return {w for w in _normalize(text).split() if len(w) > 2 and w not in STOPWORDS}
+MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
+DEFAULT_SIMILARITY_THRESHOLD = 0.65
 
 
 class KnowledgeBase:
+
     def __init__(self, kb_path: Path = KB_PATH):
+        print("Loading SentenceTransformer model...")
+        self.model = SentenceTransformer(MODEL_NAME)
+
         with open(kb_path, "r", encoding="utf-8") as f:
             self.raw = json.load(f)
+
         self.entries = self._flatten()
 
-    def _flatten(self):
-        """Turn topics[].qa[] into one flat list of retrievable entries,
-        each enriched with topic-level context (sources, legal/islamic basis)."""
+        # Focused embedding representation: Topic + Question + Keywords (Excludes long answer bodies to prevent noise)
+        self.texts_to_embed = [
+            f"Topic: {e['topic_title']} | Question: {e['question']} | Keywords: {' '.join(e['keywords'])}"
+            for e in self.entries
+        ]
+
+        print("Precomputing embeddings for knowledge base entries...")
+        self.entry_embeddings = self.model.encode(
+            self.texts_to_embed, convert_to_tensor=True
+        )
+        print(
+            f"Knowledge base ready: {len(self.entries)} entries loaded into vector memory."
+        )
+
+    def _flatten(self) -> list[Dict[str, Any]]:
+        """Flatten topics and Q&A items into retrievable entry objects."""
         flat = []
         for topic in self.raw["topics"]:
             topic_context = {
@@ -80,62 +53,168 @@ class KnowledgeBase:
                 "scope_note": topic.get("scope_note"),
             }
             for qa in topic.get("qa", []):
-                keywords_normalized = [_normalize(k) for k in qa.get("keywords", [])]
-                flat.append({
-                    "id": qa["id"],
-                    "question": qa["question"],
-                    "answer": qa["answer"],
-                    "keywords": keywords_normalized,
-                    # Precompute content-word sets for fast scoring
-                    "_keyword_word_sets": [_content_words(k) for k in keywords_normalized],
-                    "_question_words": _content_words(qa["question"]),
-                    **topic_context,
-                })
+                flat.append(
+                    {
+                        "id": qa["id"],
+                        "question": qa["question"],
+                        "answer": qa["answer"],
+                        "keywords": qa.get("keywords", []),
+                        **topic_context,
+                    }
+                )
         return flat
 
-    def search(self, user_question: str, top_k: int = 1):
-        """Return the top_k best-matching entries with their scores,
-        sorted highest score first. Entries below MIN_SCORE_THRESHOLD
-        are excluded."""
-        normalized_query = _normalize(user_question)
-        query_words = _content_words(user_question)
+    def search(
+        self,
+        user_question: str,
+        top_k: int = 1,
+        min_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
+    ) -> list[Dict[str, Any]]:
+        """Compute cosine similarity between query vector and knowledge base embeddings."""
+        query_embedding = self.model.encode(
+            user_question, convert_to_tensor=True
+        )
+        scores = util.cos_sim(query_embedding, self.entry_embeddings)[0]
 
-        scored = []
-        for entry in self.entries:
-            score = 0
+        top_results = scores.topk(k=min(top_k, len(self.entries)))
 
-            # Keyword matching: whole-phrase substring match scores highest,
-            # partial word overlap with a keyword phrase scores lower.
-            for kw, kw_words in zip(entry["keywords"], entry["_keyword_word_sets"]):
-                if not kw:
-                    continue
-                if kw in normalized_query:
-                    score += 4  # exact phrase match — strong signal
-                else:
-                    score += 2 * len(query_words & kw_words)
+        results = []
+        for score, idx in zip(top_results.values, top_results.indices):
+            score_val = score.item()
+            if score_val >= min_threshold:
+                match = dict(self.entries[idx.item()])
+                match["similarity_score"] = round(score_val, 4)
+                results.append(match)
 
-            # Small bonus for content-word overlap with the entry's own
-            # question text (helps when phrasing differs from keywords).
-            score += 1 * len(query_words & entry["_question_words"])
+        return results
 
-            if score > 0:
-                scored.append((score, entry))
-
-        scored.sort(key=lambda x: x[0], reverse=True)
-        results = [entry for score, entry in scored if score >= MIN_SCORE_THRESHOLD]
-        return results[:top_k]
-
-    def get_best_match(self, user_question: str):
-        results = self.search(user_question, top_k=1)
+    def get_best_match(
+        self,
+        user_question: str,
+        min_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
+    ) -> Optional[Dict[str, Any]]:
+        """Return top 1 matching entry or None if below confidence threshold."""
+        results = self.search(
+            user_question, top_k=1, min_threshold=min_threshold
+        )
         return results[0] if results else None
 
+    def get_suggested_questions(
+        self, per_topic: int = 1, total: int = 6
+    ) -> list[Dict[str, str]]:
+        """
+        Returns a small, diverse set of example questions for the frontend to
+        show as clickable "starter" chips (e.g. above the 'Ask Panah AI' input
+        box), so a first-time user sees what kinds of things they can ask
+        instead of facing a blank input field.
 
-# Singleton instance the Flask app can import directly.
+        Picks up to `per_topic` question(s) from each topic, in topic order,
+        then trims to `total` overall so the UI doesn't get overcrowded even
+        as more topics are added to knowledge_base.json later.
+
+        Returns: [{"question": "...", "topic_id": "...", "topic_title": "..."}, ...]
+        """
+        seen_topics = set()
+        suggestions: list[Dict[str, str]] = []
+
+        for entry in self.entries:
+            tid = entry["topic_id"]
+            count_for_topic = sum(1 for s in suggestions if s["topic_id"] == tid)
+            if count_for_topic >= per_topic:
+                continue
+            suggestions.append({
+                "question": entry["question"],
+                "topic_id": tid,
+                "topic_title": entry["topic_title"],
+            })
+            seen_topics.add(tid)
+            if len(suggestions) >= total:
+                break
+
+        return suggestions
+
+
+# Global instance loaded once on startup for Flask/FastAPI backend routes
 kb = KnowledgeBase()
 
 
+# ---------------------------------------------------------------------------
+# Helpline fallback text, reused in the restricted fallback instruction below.
+# Keep this in sync with Topic 8 (Emergency Helplines) in knowledge_base.json
+# if those numbers ever change.
+# ---------------------------------------------------------------------------
+HELPLINE_REFERRAL_TEXT = (
+    "PCSW 1043 (Punjab, 24/7), Ministry of Human Rights 1099 (nationwide, toll-free), "
+    "or SLACC 0800-70806 (nationwide, 24/7)"
+)
+
+
+def process_user_query(
+    user_query: str, threshold: float = DEFAULT_SIMILARITY_THRESHOLD
+) -> Dict[str, Any]:
+    """
+    RAG Integration helper: Prepares system instructions and payload based on KB matching score.
+    Use this directly inside your Flask / FastAPI route handler.
+    """
+    match = kb.get_best_match(user_query, min_threshold=threshold)
+
+    if match:
+        # High confidence match -> RAG Grounded Mode
+        system_instruction = (
+            "You are Panah AI, an empathetic legal and social support assistant for women in Pakistan.\n"
+            "Answer the user's question accurately using ONLY the verified legal context provided below.\n"
+            "Maintain an empathetic, supportive tone and respond in the same language style as the user.\n\n"
+            "IMPORTANT GUARDRAIL: Rephrase and explain the verified context naturally, but do NOT add "
+            "any legal fact, number, percentage, section reference, exception, or claim that is not "
+            "explicitly present in the context below -- even if it seems related or you believe it to be "
+            "true from general knowledge. If the user's question asks for something the context below "
+            "does not cover (e.g. a related but different scenario, a follow-up detail, or a number not "
+            "stated here), say plainly that this specific detail isn't in Panah's verified records for "
+            "this question, rather than filling the gap yourself.\n\n"
+            f"--- VERIFIED KNOWLEDGE BASE CONTEXT ---\n"
+            f"Topic: {match['topic_title']}\n"
+            f"Verified Answer: {match['answer']}\n"
+            f"Legal Basis: {match.get('legal_basis', 'N/A')}\n"
+            f"Islamic Basis: {match.get('islamic_basis', 'N/A')}\n"
+            f"----------------------------------------"
+        )
+        return {
+            "mode": "knowledge_base_rag",
+            "similarity_score": match["similarity_score"],
+            "match": match,
+            "system_instruction": system_instruction,
+            "prompt_payload": user_query,
+        }
+    else:
+        # Out-of-scope or general question -> Restricted LLM Fallback Mode
+        system_instruction = (
+            "You are Panah AI, an empathetic legal and social support assistant for women in Pakistan.\n"
+            "No verified entry from the legal knowledge base matched this question.\n\n"
+            "If the user's question is a general, emotional, or non-legal message (a greeting, "
+            "expressing distress, asking for encouragement or reassurance, or a general safety "
+            "question like recognizing a scam), respond warmly and helpfully as normal -- this is fine "
+            "to answer directly.\n\n"
+            "However, if the user's question asks for a specific legal, financial, or religious RULE, "
+            "RIGHT, PROCEDURE, PERCENTAGE, or SECTION NUMBER (for example: inheritance shares, mehr, "
+            "khula, custody, maintenance amounts, zakat calculation, or any other statutory or fiqh "
+            "detail), you MUST NOT state any such fact from your own training knowledge, since it has "
+            "not been verified against Pakistani law or Islamic sources for this app and could be wrong "
+            "or outdated. Instead, say plainly and warmly that this specific question isn't yet in "
+            "Panah's verified records, and suggest they contact a family lawyer or one of the helplines "
+            f"({HELPLINE_REFERRAL_TEXT}).\n\n"
+            "When in doubt about whether a question counts as a 'specific legal fact' request, treat it "
+            "as one and use the safe referral response rather than guessing."
+        )
+        return {
+            "mode": "general_llm_fallback",
+            "similarity_score": None,
+            "match": None,
+            "system_instruction": system_instruction,
+            "prompt_payload": user_query,
+        }
+
+
 if __name__ == "__main__":
-    # Quick manual test — run: python retrieval.py
     test_questions = [
         "mera shohar mujhe kharcha nahi deta",
         "mehr nahi mila mujhe",
@@ -147,11 +226,20 @@ if __name__ == "__main__":
         "meri beti ko kitna hissa milega agar bhai bhi hai",
         "shohar ka farz kya hota hai islam mein kharche ka",
     ]
+
+    print("\n" + "=" * 60)
+    print("RUNNING RAG BACKEND ROUTER BENCHMARK (Threshold: 0.65)")
+    print("=" * 60)
+
     for q in test_questions:
-        match = kb.get_best_match(q)
+        result = process_user_query(q)
         print("-" * 60)
         print("Q:", q)
-        if match:
-            print(f"-> Matched [{match['topic_id']} / {match['id']}]: {match['question']}")
+        print(f"-> Mode: {result['mode']}")
+        if result["match"]:
+            m = result["match"]
+            print(
+                f"   Matched [{m['topic_id']} / {m['id']}] (Score: {m['similarity_score']}): {m['question']}"
+            )
         else:
-            print("-> No confident match found")
+            print("   Action: Routing to base LLM fallback for general response.")
