@@ -459,7 +459,7 @@ body.landing-body {
    TRUST NOTE
    ========================================================================== */
 .trust-note {
-  background-color: var(--teal);
+  background-color: color-mix(in srgb, var(--teal) 80%, transparent); /* 80% opacity */
   color: var(--cream);
   text-align: center;
 }
