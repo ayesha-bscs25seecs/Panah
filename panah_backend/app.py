@@ -2,10 +2,12 @@
 app.py — Panah Flask backend.
 
 Endpoints:
-  POST /ask             — KB-grounded chatbot reply (unchanged, see below)
-  POST /verify-session   — verifies a Firebase phone-auth ID token and
-                            creates/finds the user record by phone number
-  GET  /health           — status check
+  POST /ask                  — KB-grounded chatbot reply (unchanged, see below)
+  POST /verify-session        — verifies a Firebase phone-auth ID token and
+                                 creates/finds the user record by phone number
+  GET  /health                — status check
+  GET  /suggested-questions   — example questions for the frontend to show as
+                                 clickable chips above the chat input
 
 /ask Body:  {
     "question": "mera shohar mujhe kharcha nahi deta",
@@ -1050,6 +1052,36 @@ def health():
         "llm_configured": client is not None,
         "firebase_configured": firebase_app is not None,
     })
+
+
+@app.route("/suggested-questions", methods=["GET"])
+def suggested_questions():
+    """
+    Returns a small set of example questions for the frontend to show as
+    clickable starter chips above the 'Ask Panah AI' input — so a first-time
+    user sees what kinds of things they can ask instead of a blank box.
+
+    Optional query params:
+      ?per_topic=1   — how many questions to pull per topic (default: 1)
+      ?total=6       — max number of suggestions returned overall (default: 6)
+
+    Example: GET /suggested-questions?total=8
+
+    Reply: { "suggestions": [
+        {"question": "...", "topic_id": "...", "topic_title": "..."}, ...
+    ]}
+    """
+    try:
+        per_topic = int(request.args.get("per_topic", 1))
+        total = int(request.args.get("total", 6))
+    except ValueError:
+        return jsonify({"error": "'per_topic' and 'total' must be integers."}), 400
+
+    if per_topic < 1 or total < 1:
+        return jsonify({"error": "'per_topic' and 'total' must be positive."}), 400
+
+    suggestions = kb.get_suggested_questions(per_topic=per_topic, total=total)
+    return jsonify({"suggestions": suggestions})
 
 
 if __name__ == "__main__":

@@ -5,41 +5,42 @@ from retrieval import kb
 api_key = os.environ.get("DASHSCOPE_API_KEY")
 
 if not api_key:
-  raise ValueError("DASHSCOPE_API_KEY not found.")
+    raise ValueError("DASHSCOPE_API_KEY not found.")
 
 client = OpenAI(
     api_key=api_key,
     base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 )
 
-# Replace the hardcoded string with an interactive prompt
 user_question = input("Type your question here: ")
 
-# Retrieve matching chunk dynamically
-match = kb.get_best_match(user_question)
+# Search matching chunk dynamically
+matches = kb.search(user_question, top_k=1)
 
-if match:
-  knowledge_chunk = (
-      f"Topic: {match['topic_title']}\n"
-      f"Answer: {match['answer']}\n"
-      f"Legal Basis: {match['legal_basis']}"
-  )
+if matches:
+    match = matches[0]
+    print(f"\n[DEBUG] Matched Entry: {match['id']} (Topic: {match['topic_id']})")
+    knowledge_chunk = (
+        f"Topic: {match['topic_title']}\n"
+        f"Question Context: {match['question']}\n"
+        f"Answer Facts: {match['answer']}\n"
+        f"Legal Basis: {match['legal_basis']}"
+    )
 else:
-  knowledge_chunk = "No specific legal matching rule found."
+    print("\n[DEBUG] No matching rule found above threshold.")
+    knowledge_chunk = "No specific legal matching rule found in the database."
 
 system_prompt = """
 You are a warm, respectful assistant helping Pakistani women understand their
-financial rights in simple, spoken-style Urdu (written in Roman Urdu or Urdu script,
-matching the user's own style).
+financial and legal rights in simple, clear language (written in English or Roman Urdu matching the user's style).
 
 Rules you must always follow:
-1. Answer ONLY using the information given to you in the knowledge chunk below.
-   Do not add legal or religious details that aren't in the chunk.
-2. Keep answers short — 2 to 4 sentences, like a caring, knowledgeable friend talking.
-3. Never use complex legal or religious jargon without explaining it simply.
-4. Always end with a gentle suggestion to speak with a trusted, knowledgeable woman in
-   her community if she wants to take further steps.
-5. Be warm and non-judgmental.
+1. Answer strictly using the facts given in the Knowledge Chunk below.
+2. If specific details (like dates, section numbers, or fees) are in the chunk, include them directly.
+3. Keep answers clear, accurate, and concise (2 to 4 sentences).
+4. Do not invent or assume any legal details outside the chunk.
+5. If the chunk says no rule was found, state politely that the specific detail is not in your current records.
+6. Be warm, supportive, and non-judgmental.
 """
 
 response = client.chat.completions.create(
@@ -49,8 +50,8 @@ response = client.chat.completions.create(
         {
             "role": "user",
             "content": (
-                f"Knowledge chunk:\n{knowledge_chunk}\n\nQuestion:"
-                f" {user_question}"
+                f"Knowledge chunk:\n{knowledge_chunk}\n\n"
+                f"Question: {user_question}"
             ),
         },
     ],
