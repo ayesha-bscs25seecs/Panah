@@ -479,7 +479,11 @@ function setLang(lang) {
   if (I18N[lang]) {
     localStorage.setItem(LS_LANG_KEY, lang);
     document.documentElement.lang = lang === "ur" ? "ur" : "en";
-    document.documentElement.dir = lang === "ur" ? "rtl" : "ltr";
+
+    /* Keep the chat UI LTR (WhatsApp-style bubbles) regardless of language.
+       Apply RTL only on landing/content/auth pages. */
+    var isChatPage = !!document.getElementById("app") && !!document.getElementById("chat-header");
+    document.documentElement.dir = (lang === "ur" && !isChatPage) ? "rtl" : "ltr";
     document.documentElement.classList.toggle("lang-ur", lang === "ur");
 
     /* Swap logos when switching to/from Urdu */

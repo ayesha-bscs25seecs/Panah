@@ -12,6 +12,10 @@ html.landing-body body.landing-body {
   height: auto;
   overflow: visible;
   background-color: var(--cream);
+  background-image: url("bg-pattern.png");
+  background-repeat: repeat;
+  background-size: 520px auto;
+  background-attachment: fixed;
 }
 
 body.landing-body {
@@ -19,6 +23,15 @@ body.landing-body {
   color: var(--teal);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Keep content sections readable over the pattern background */
+.landing-section,
+.content-body,
+.content-hero,
+.entry-modal,
+.hero {
+  background-color: rgba(248, 245, 242, 0.88);
 }
 
 /* ==========================================================================
@@ -298,10 +311,9 @@ body.landing-body {
 }
 
 .hero-logo {
-  width: 140px;
+  width: 180px;
   height: auto;
   margin: 0 auto 22px;
-  background-color: var(--cream);
 }
 
 .hero-title {
@@ -314,9 +326,11 @@ body.landing-body {
 
 .hero-subtitle {
   font-size: 1.05rem;
-  color: var(--gray);
+  color: #5a2f2f;
+  font-weight: 500;
   margin-bottom: 32px;
   line-height: 1.6;
+  text-shadow: 0 1px 3px rgba(248, 245, 242, 0.95);
 }
 
 .hero .arch-decoration {
@@ -508,7 +522,8 @@ body.landing-body {
 
 .entry-modal p {
   font-size: 0.95rem;
-  color: var(--gray);
+  color: #5a2f2f;
+  font-weight: 500;
   margin-bottom: 24px;
   line-height: 1.55;
 }
@@ -585,8 +600,10 @@ body.landing-body {
   max-width: 620px;
   margin: 0 auto;
   font-size: 1.05rem;
-  color: var(--gray);
+  color: #5a2f2f;
+  font-weight: 500;
   line-height: 1.6;
+  text-shadow: 0 1px 3px rgba(248, 245, 242, 0.95);
 }
 
 .content-body {
@@ -715,7 +732,7 @@ body.landing-body {
   .landing-nav { display: flex; }
 
   .hero { padding: 88px var(--section-pad-x) 110px; }
-  .hero-logo { width: 170px; }
+  .hero-logo { width: 230px; }
   .hero-title { font-size: 2.35rem; }
   .hero-subtitle { font-size: 1.15rem; }
 

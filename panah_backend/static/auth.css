@@ -8,6 +8,10 @@ html, body.auth-body {
   height: 100%;
   overflow-y: auto;
   background-color: var(--cream);
+  background-image: url("bg-pattern.png");
+  background-repeat: repeat;
+  background-size: 520px auto;
+  background-attachment: fixed;
   font-family: var(--font-base);
   color: var(--teal);
 }
@@ -23,13 +27,22 @@ html.lang-ur .auth-label {
   font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif;
 }
 
+/* Keep phone/OTP inputs LTR-aligned even on the RTL Urdu auth page */
+html.lang-ur .phone-field,
+html.lang-ur .phone-prefix,
+html.lang-ur #phone-input,
+html.lang-ur #otp-input {
+  direction: ltr;
+  text-align: left;
+}
+
 #auth-app {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
   max-width: var(--max-chat-width);
   margin: 0 auto;
-  background-color: var(--cream);
+  background-color: rgba(248, 245, 242, 0.82);
 }
 
 /* ---------- Header (reuses teal bar look) ---------- */
@@ -86,7 +99,8 @@ html.lang-ur .auth-label {
 
 .auth-subtitle {
   font-size: 0.9rem;
-  color: var(--gray);
+  color: #5a2f2f;
+  font-weight: 500;
   margin-bottom: 20px;
   line-height: 1.5;
 }

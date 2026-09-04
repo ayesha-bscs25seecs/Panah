@@ -45,8 +45,22 @@ html, body {
   overflow: hidden;             /* chat area scrolls, not the page */
   font-family: var(--font-base);
   background-color: var(--cream);
+  background-image: url("bg-pattern.png");
+  background-repeat: repeat;
+  background-size: 520px auto;
+  background-attachment: fixed;
   color: var(--teal);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* White overlay to soften the pattern across all pages (55% opacity) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-color: rgba(248, 245, 242, 0.55);
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Remove default outline; add a clear focus ring instead */
@@ -485,11 +499,8 @@ html, body {
   padding: 12px 12px 8px;
   scroll-behavior: smooth;
 
-  /* Warm, subtle chat background that sits on the new cream page */
+  /* Plain chat background; pattern is kept on the page body, not here */
   background-color: var(--cream);
-  background-image:
-    radial-gradient(ellipse at 20% 80%, rgba(180, 134, 108, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(91, 44, 54, 0.05) 0%, transparent 60%);
 
   /* Firefox scrollbar */
   scrollbar-width: thin;

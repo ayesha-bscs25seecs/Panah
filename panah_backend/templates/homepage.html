@@ -6,20 +6,13 @@
   <main>
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-content">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah logo" class="hero-logo" data-logo-default="{{ url_for('static', filename='logo.png') }}" data-logo-ur="{{ url_for('static', filename='logo-ur.png') }}" />
+        <img src="{{ url_for('static', filename='logo-home.png') }}" alt="Panah logo" class="hero-logo" data-logo-default="{{ url_for('static', filename='logo-home.png') }}" data-logo-ur="{{ url_for('static', filename='logo-home-ur.png') }}" />
         <h1 id="hero-title" class="hero-title" data-i18n="hero.title">Jahan sawal bhi mehfooz hain</h1>
         <p class="hero-subtitle" data-i18n="hero.subtitle">
           Mehr, Nafaqa, aur fraud se bachao ke sawaalon ka seedha jawab,
           apni zubaan mein, bina kisi judgement ke.
         </p>
         <a href="{{ url_for('chat_page') }}" class="cta-primary" data-i18n="hero.cta">Panah se poochein</a>
-      </div>
-
-      <div class="arch-decoration" aria-hidden="true">
-        <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 120V70a80 80 0 0 1 160 0v50" stroke="#B4866C" stroke-width="16" stroke-linecap="round"/>
-          <path d="M60 120V75a40 40 0 0 1 80 0v45" stroke="#1F3E43" stroke-width="16" stroke-linecap="round"/>
-        </svg>
       </div>
     </section>
 
