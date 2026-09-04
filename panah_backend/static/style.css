@@ -892,3 +892,17 @@ html, body {
    HIGH-CONTRAST / DARK MODE HINTS (optional, future extension)
    ========================================================================== */
 /* @media (prefers-color-scheme: dark) { ... } */
+
+/* ==========================================================================
+   URDU LANGUAGE SPECIFIC — Nastaliq font for chat UI
+   ========================================================================== */
+html.lang-ur body {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", var(--font-base);
+  line-height: 1.8;
+}
+
+html.lang-ur .app-name,
+html.lang-ur .msg-bubble,
+html.lang-ur .chip {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", var(--font-base);
+}

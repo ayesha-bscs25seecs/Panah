@@ -12,6 +12,17 @@ html, body.auth-body {
   color: var(--teal);
 }
 
+/* Urdu language specific: Nastaliq font */
+html.lang-ur body.auth-body {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", var(--font-base);
+  line-height: 1.8;
+}
+
+html.lang-ur .auth-title,
+html.lang-ur .auth-label {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif;
+}
+
 #auth-app {
   display: flex;
   flex-direction: column;
