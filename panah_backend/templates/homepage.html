@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Panah — Jahan sawal bhi mehfooz hain{% endblock %}
+{% block title %}Panah, Jahan sawal bhi mehfooz hain{% endblock %}
 
 {% block content %}
   <main>
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-content">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah logo" class="hero-logo" />
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah logo" class="hero-logo" data-logo-default="{{ url_for('static', filename='logo.png') }}" data-logo-ur="{{ url_for('static', filename='logo-ur.png') }}" />
         <h1 id="hero-title" class="hero-title" data-i18n="hero.title">Jahan sawal bhi mehfooz hain</h1>
         <p class="hero-subtitle" data-i18n="hero.subtitle">
-          Mehr, Nafaqa, aur fraud se bachao ke sawaalon ka seedha jawab —
+          Mehr, Nafaqa, aur fraud se bachao ke sawaalon ka seedha jawab,
           apni zubaan mein, bina kisi judgement ke.
         </p>
         <a href="{{ url_for('chat_page') }}" class="cta-primary" data-i18n="hero.cta">Panah se poochein</a>
@@ -55,6 +55,19 @@
         <article class="topic-card">
           <div class="topic-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h3 class="topic-title" data-i18n="topics.zakat.title">Zakat</h3>
+          <p class="topic-desc" data-i18n="topics.zakat.desc">
+            Islamic almsgiving ke faraiz aur huqooq ko samjhein, hisaab se le kar mustahiqeen tak.
+          </p>
+        </article>
+
+        <article class="topic-card">
+          <div class="topic-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               <path d="m9 12 2 2 4-4"/>
             </svg>
@@ -75,7 +88,7 @@
           <div>
             <h3 class="step-title" data-i18n="steps.step1.title">Apna sawaal poochhein</h3>
             <p class="step-body" data-i18n="steps.step1.body">
-              Likh kar bhejein ya mic dabaa kar bolein — Urdu, Roman Urdu, ya English mein.
+              Likh kar bhejein ya mic dabaa kar bolein, Urdu, Roman Urdu, ya English mein.
             </p>
           </div>
         </div>
@@ -93,7 +106,7 @@
           <div>
             <h3 class="step-title" data-i18n="steps.step3.title">Seedha guidance paayein</h3>
             <p class="step-body" data-i18n="steps.step3.body">
-              Aasan lafzon mein jawab, awaz mein sunnay ke liye bhi — kisi technical jargon ke baghair.
+              Aasan lafzon mein jawab, awaz mein sunnay ke liye bhi, kisi technical jargon ke baghair.
             </p>
           </div>
         </div>
@@ -103,7 +116,7 @@
     <section class="landing-section trust-note" aria-label="Privacy and safety">
       <p data-i18n-html="trust.note">
         <strong>Aapki baat private hai.</strong><br />
-        Koi judgement nahi, kisi ko report nahi — sirf aapki madad ke liye ek mehfooz jagah.
+        Koi judgement nahi, kisi ko report nahi, sirf aapki madad ke liye ek mehfooz jagah.
       </p>
     </section>
   </main>

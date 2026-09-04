@@ -301,6 +301,7 @@ body.landing-body {
   width: 140px;
   height: auto;
   margin: 0 auto 22px;
+  background-color: var(--cream);
 }
 
 .hero-title {
@@ -352,7 +353,7 @@ body.landing-body {
 
 .topics-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 18px;
 }
 
@@ -721,7 +722,7 @@ body.landing-body {
   .landing-section-title { font-size: 1.7rem; margin-bottom: 32px; }
   .landing-section-lead { font-size: 1.1rem; margin-bottom: 36px; }
 
-  .topics-grid { grid-template-columns: repeat(3, 1fr); }
+  .topics-grid { grid-template-columns: repeat(4, 1fr); }
   .steps { grid-template-columns: repeat(3, 1fr); }
   .values-grid { grid-template-columns: repeat(3, 1fr); }
 
@@ -733,6 +734,24 @@ body.landing-body {
   .entry-option,
   .entry-action-primary,
   .entry-action-secondary { flex: 1; }
+}
+
+/* ==========================================================================
+   URDU LANGUAGE SPECIFIC STYLES
+   ========================================================================== */
+html.lang-ur body.landing-body {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Varela Round", var(--font-base);
+  line-height: 2;
+}
+
+html.lang-ur .hero-title,
+html.lang-ur .landing-section-title,
+html.lang-ur .topic-title,
+html.lang-ur .step-title,
+html.lang-ur .entry-modal h2,
+html.lang-ur .content-hero h1,
+html.lang-ur .value-card h3 {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif;
 }
 
 /* Respect reduced motion */

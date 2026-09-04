@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="Panah — aapka mahfooz sahara. Financial rights guidance for Pakistani women." />
+  <meta name="description" content="Panah, aapka mahfooz sahara. Financial rights guidance for Pakistani women." />
   <!-- Privacy: no referrer leakage -->
   <meta name="referrer" content="no-referrer" />
-  <title>Panah — aapka mahfooz sahara</title>
+  <title>Panah, aapka mahfooz sahara</title>
 
   <!-- Inline SVG favicon (shield icon) — no external requests -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
@@ -87,7 +87,7 @@
 
           <!-- Panah logo -->
           <a href="{{ url_for('home') }}" class="header-logo-link" aria-label="Panah home">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah" class="header-logo-img" />
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah" class="header-logo-img" data-logo-default="{{ url_for('static', filename='logo.png') }}" data-logo-ur="{{ url_for('static', filename='logo-ur.png') }}" />
           </a>
           <div class="header-text">
             <h1 class="app-name" data-i18n="chat.appName">Panah</h1>

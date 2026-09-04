@@ -19,9 +19,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="{% block description %}Panah — jahan sawal bhi mehfooz hain. Mehr, Nafaqa, aur scams se bachao ke sawaalon ka seedha jawab.{% endblock %}" />
+  <meta name="description" content="{% block description %}Panah, jahan sawal bhi mehfooz hain. Mehr, Nafaqa, aur scams se bachao ke sawaalon ka seedha jawab.{% endblock %}" />
   <meta name="referrer" content="no-referrer" />
-  <title>{% block title %}Panah — Jahan sawal bhi mehfooz hain{% endblock %}</title>
+  <title>{% block title %}Panah, Jahan sawal bhi mehfooz hain{% endblock %}</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}" />
@@ -31,7 +31,7 @@
   <header class="landing-header">
     <div class="header-left">
       <a href="{{ url_for('home') }}" aria-label="Panah home">
-        <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" />
+        <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-header-logo" data-logo-default="{{ url_for('static', filename='logo-side.png') }}" data-logo-ur="{{ url_for('static', filename='logo-side-ur.png') }}" />
       </a>
 
       <!-- Language switcher — persistent dropdown next to the brand logo -->
@@ -70,7 +70,7 @@
 
   <footer class="landing-footer">
     <div class="landing-footer-inner">
-      <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-footer-logo" />
+      <img src="{{ url_for('static', filename='logo-side.png') }}" alt="Panah" class="landing-footer-logo" data-logo-default="{{ url_for('static', filename='logo-side.png') }}" data-logo-ur="{{ url_for('static', filename='logo-side-ur.png') }}" />
       <nav class="landing-footer-nav" aria-label="Footer navigation">
         <a href="{{ url_for('home') }}" data-i18n="nav.home">Home</a>
         <a href="{{ url_for('about') }}" data-i18n="nav.about">About</a>
@@ -78,7 +78,7 @@
         <a href="{{ url_for('privacy') }}" data-i18n="nav.privacy">Privacy</a>
         <a href="{{ url_for('chat_page') }}" data-i18n="nav.chat">Chat</a>
       </nav>
-      <p class="landing-footer-copy" data-i18n="footer.tagline">Panah — jahan sawal bhi mehfooz hain.</p>
+      <p class="landing-footer-copy" data-i18n="footer.tagline">Panah, jahan sawal bhi mehfooz hain.</p>
     </div>
   </footer>
 
