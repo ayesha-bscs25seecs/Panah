@@ -406,7 +406,14 @@ async function handleSend() {
 function renderSuggestedChips() {
   if (!suggestedChips) return;
 
-  const chips = UI_STRINGS.chips || [];
+  // Read chips from the current i18n language (not the frozen UI_STRINGS)
+  // so they update live when the user changes the language preference.
+  const currentLang =
+    window.PanahI18n ? window.PanahI18n.getLang() : UI_LANG;
+  const chips =
+    (window.PanahI18n && window.PanahI18n.I18N[currentLang]
+      ? window.PanahI18n.I18N[currentLang].chat.chips
+      : null) || UI_STRINGS.chips || [];
 
   suggestedChips.innerHTML = "";
   chips.forEach(({ topic, text }) => {
@@ -952,13 +959,23 @@ function closeSettingsPanel() {
 }
 
 /**
- * Saves the language preference. Only affects the welcome message shown
- * on new chats — does NOT change the per-message reply-language logic.
+ * Saves the language preference, syncs the i18n system so all static UI
+ * labels update immediately, and re-renders the suggestion chips.
+ * Does NOT change the per-message reply-language detection logic.
  */
 function handleLangPrefChange() {
   if (!settingsLangSelect) return;
   const value = settingsLangSelect.value; // "ur" or "en"
   localStorage.setItem(LS_LANG_PREF, value);
+
+  // Sync the i18n system so applyLanguage() uses the new language
+  if (window.PanahI18n) {
+    window.PanahI18n.setLang(value);
+    window.PanahI18n.applyLanguage(value);
+  }
+
+  // Re-render chips with the new language's translations
+  renderSuggestedChips();
 }
 
 /**

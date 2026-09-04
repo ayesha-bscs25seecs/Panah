@@ -90,7 +90,7 @@
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Panah" class="header-logo-img" />
           </a>
           <div class="header-text">
-            <h1 class="app-name">Panah</h1>
+            <h1 class="app-name" data-i18n="chat.appName">Panah</h1>
             <p class="subtitle" id="subtitle-text" data-i18n="chat.subtitle">aapka mahfooz sahara</p>
             <!-- Typing indicator shown in header while waiting for a reply -->
             <div class="typing-indicator-header" id="typing-indicator-header" aria-live="polite" aria-label="Bot is typing" hidden>
@@ -206,8 +206,8 @@
           <div class="settings-group">
             <label class="settings-label" data-i18n="chat.langPrefLabel">Language preference</label>
             <select id="settings-lang-select" class="settings-select">
-              <option value="ur" data-i18n="chat.langUrdu">Urdu</option>
-              <option value="en" data-i18n="chat.langEnglish">English</option>
+              <option value="ur">اردو</option>
+              <option value="en">English</option>
             </select>
           </div>
 

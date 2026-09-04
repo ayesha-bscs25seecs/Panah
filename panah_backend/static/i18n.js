@@ -72,6 +72,7 @@ const I18N = {
       guest: "مہمان کے طور پر جاری رکھیں",
     },
     chat: {
+      appName: "پناہ",
       subtitle: "جہاں سوالات بھی محفوظ ہیں",
       placeholder: "اپنا سوال لکھیں یا بولیں...",
       micLabel: "اپنا سوال بولیں",
@@ -219,6 +220,7 @@ const I18N = {
       guest: "Continue as guest",
     },
     chat: {
+      appName: "Panah",
       subtitle: "Where even questions are safe",
       placeholder: "Type or speak your question...",
       micLabel: "Speak your question",
@@ -366,6 +368,7 @@ const I18N = {
       guest: "Mehmaan ke tor par jari rakhein",
     },
     chat: {
+      appName: "Panah",
       subtitle: "Jahan sawal bhi mehfooz hain",
       placeholder: "Apna sawaal likhein ya bolein...",
       micLabel: "Apna sawaal bolein",
