@@ -659,6 +659,9 @@ html, body {
 @media (min-width: 900px) {
   body { background-color: #E8E2DB; }
   #layout { align-items: center; justify-content: center; }
+  /* The sidebar is always visible inline at this width, so the mobile
+     drawer (hamburger) toggle serves no purpose here — hide it. */
+  #sidebar-toggle-btn { display: none; }
   #sidebar {
     border-radius: 16px 0 0 16px;
     margin: 24px 0 24px 24px;
