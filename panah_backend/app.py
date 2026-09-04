@@ -51,6 +51,7 @@ import re
 import json
 import random
 import logging
+from datetime import datetime
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
 from openai import OpenAI
@@ -211,6 +212,16 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS chats (
+            id TEXT PRIMARY KEY,
+            phone TEXT NOT NULL,
+            title TEXT,
+            messages TEXT DEFAULT '[]',
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (phone) REFERENCES users(phone)
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -233,6 +244,165 @@ def save_user(phone: str, firebase_uid: str):
 
 
 init_db()
+
+
+# --- Chat store (SQLite) ------------------------------------------------
+# Persists chat history per logged-in user (keyed by phone number).
+# Every chat endpoint requires a valid Firebase Bearer token, and the
+# per-chat endpoints (GET/PUT/DELETE with an id) enforce an explicit
+# ownership check so one user cannot read or overwrite another's chat.
+
+
+def _get_caller_phone():
+    """Verify the Bearer token from the request's Authorization header
+    and return the caller's phone number, or None if missing/invalid."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    id_token = auth_header[7:]
+    if not id_token or firebase_app is None:
+        return None
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+        return decoded.get("phone_number")
+    except Exception:
+        logger.warning("Bearer token verification failed in chat endpoint")
+        return None
+
+
+def _chat_row(row):
+    """Convert a sqlite3.Row from the chats table into a JSON-safe dict."""
+    if not row:
+        return None
+    d = dict(row)
+    try:
+        d["messages"] = json.loads(d.get("messages", "[]"))
+    except (json.JSONDecodeError, TypeError):
+        d["messages"] = []
+    return d
+
+
+def get_chat_owner(chat_id: str) -> str | None:
+    """Return the phone number that owns this chat, or None if not found."""
+    conn = _get_db()
+    row = conn.execute(
+        "SELECT phone FROM chats WHERE id = ?", (chat_id,)
+    ).fetchone()
+    conn.close()
+    return row["phone"] if row else None
+
+
+def list_chats(phone: str) -> list:
+    """Return summaries (no message bodies) of all chats for a user,
+    newest-first."""
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT id, title, updated_at FROM chats "
+        "WHERE phone = ? ORDER BY updated_at DESC",
+        (phone,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_chat(chat_id: str) -> dict | None:
+    """Return the full chat record (including messages) or None."""
+    conn = _get_db()
+    row = conn.execute(
+        "SELECT id, phone, title, messages, updated_at "
+        "FROM chats WHERE id = ?",
+        (chat_id,),
+    ).fetchone()
+    conn.close()
+    return _chat_row(row)
+
+
+def save_chat(chat_id: str, phone: str, title: str,
+              messages: list | None = None):
+    """Insert or replace a chat.  Caller MUST verify ownership before
+    calling this — the function itself does NOT check."""
+    conn = _get_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO chats (id, phone, title, messages, updated_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (
+            chat_id,
+            phone,
+            title,
+            json.dumps(messages if messages is not None else []),
+            datetime.now().isoformat(),
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_chat(chat_id: str):
+    """Delete a chat by id.  Caller MUST verify ownership first."""
+    conn = _get_db()
+    conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+    conn.commit()
+    conn.close()
+
+
+@app.route("/chats", methods=["GET"])
+def chats_list():
+    """List all chat summaries for the authenticated user."""
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    return jsonify(list_chats(phone))
+
+
+@app.route("/chats/<chat_id>", methods=["GET"])
+def chats_get(chat_id):
+    """Return the full chat (including messages) if the caller owns it."""
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    owner = get_chat_owner(chat_id)
+    if owner is None or owner != phone:
+        return jsonify({"error": "Chat not found."}), 404
+    chat = get_chat(chat_id)
+    if not chat:
+        return jsonify({"error": "Chat not found."}), 404
+    return jsonify(chat)
+
+
+@app.route("/chats/<chat_id>", methods=["PUT"])
+def chats_put(chat_id):
+    """Create or update a chat, with ownership enforcement.
+
+    - New chat (no existing row): allowed.
+    - Existing row owned by caller: allowed (update).
+    - Existing row owned by someone else: 403 Forbidden.
+    """
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    owner = get_chat_owner(chat_id)
+    if owner is not None and owner != phone:
+        return jsonify({"error": "Forbidden."}), 403
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip() or "Chat"
+    messages = data.get("messages", [])
+    if not isinstance(messages, list):
+        messages = []
+    save_chat(chat_id, phone, title, messages)
+    return jsonify({"success": True})
+
+
+@app.route("/chats/<chat_id>", methods=["DELETE"])
+def chats_delete(chat_id):
+    """Delete a chat if the caller owns it."""
+    phone = _get_caller_phone()
+    if not phone:
+        return jsonify({"error": "Authentication required."}), 401
+    owner = get_chat_owner(chat_id)
+    if owner is None or owner != phone:
+        return jsonify({"error": "Chat not found."}), 404
+    delete_chat(chat_id)
+    return jsonify({"success": True})
 
 
 @app.route("/verify-session", methods=["POST"])

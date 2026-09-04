@@ -190,6 +190,10 @@
   </div><!-- /#layout -->
 
   <!-- Application logic — vanilla JS, no build tools required -->
+  <!-- Firebase SDKs — needed so script.js can call getIdToken() -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+
   <script src="{{ url_for('static', filename='i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
