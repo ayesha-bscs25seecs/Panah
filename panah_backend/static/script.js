@@ -720,11 +720,11 @@ function toggleSidebarDrawer() {
   }
 }
 
-/** Logs the user out: clears the login flag and returns to guest view. */
+/** Logs the user out: clears the login flag and returns to the homepage. */
 function handleLogout() {
   localStorage.removeItem(LS_LOGIN_FLAG);
   localStorage.removeItem(LS_USER_LABEL);
-  window.location.reload();
+  window.location.href = "/";
 }
 
 /**
