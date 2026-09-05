@@ -42,6 +42,9 @@ html.lang-ur #otp-input {
   min-height: 100dvh;
   max-width: var(--max-chat-width);
   margin: 0 auto;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  border-radius: 20px 20px 0 0;
   background-color: rgba(248, 245, 242, 0.82);
 }
 
@@ -49,13 +52,14 @@ html.lang-ur #otp-input {
 #auth-header {
   display: flex;
   align-items: center;
-  gap: 12px;
   height: var(--header-height);
   padding: 0 14px;
   padding-top: var(--safe-top);
   background-color: var(--teal);
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  border-radius: 20px 20px 0 0;
+  margin: 0px 0px;
 }
 
 .back-link {
@@ -73,10 +77,19 @@ html.lang-ur #otp-input {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: var(--copper);
+  background-color: var(--teal);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+#auth-header .avatar-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 /* ---------- Card ---------- */

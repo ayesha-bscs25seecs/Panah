@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Auth Logo Preview — Transparent Icon</title>
+<style>
+  :root { --teal: #1f3e43; --cream: #f5f3f1; }
+  body { margin: 0; padding: 40px; font-family: sans-serif; background: var(--cream); }
+  h2 { color: var(--teal); margin-top: 32px; }
+  .row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-top: 12px; }
+  .col { text-align: center; }
+  .col small { display: block; margin-top: 4px; color: #555; font-size: 12px; }
+
+  /* ---- Transparent icon on exact --teal background ---- */
+  .icon-badge {
+    border-radius: 50%;
+    background-color: var(--teal);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-badge img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  /* Sizes */
+  .s36 { width: 36px; height: 36px; }
+  .s40 { width: 40px; height: 40px; }
+  .s44 { width: 44px; height: 44px; }
+  .s48 { width: 48px; height: 48px; }
+  .s52 { width: 52px; height: 52px; }
+
+  /* Simulated header bar */
+  .fake-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 60px;
+    padding: 0 14px;
+    background-color: var(--teal);
+    border-radius: 8px;
+    color: var(--cream);
+    font-weight: 600;
+    max-width: 480px;
+  }
+  .fake-header .label { opacity: 0.7; font-size: 0.85rem; }
+
+  /* Old (non-transparent) for comparison */
+  .old-icon {
+    border-radius: 50%;
+    background-color: var(--teal);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .old-icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+</style>
+</head>
+<body>
+
+<h2>A &mdash; OLD: original PNG (built-in teal bg, mismatched with header)</h2>
+<div class="row">
+  <div class="col">
+    <div class="old-icon s40"><img src="panah_backend/static/logo-icon.png" alt="" /></div>
+    <small>40 px</small>
+  </div>
+  <div class="col">
+    <div class="old-icon s48"><img src="panah_backend/static/logo-icon.png" alt="" /></div>
+    <small>48 px</small>
+  </div>
+</div>
+
+<h2>B &mdash; NEW: transparent icon on exact --teal (#1f3e43)</h2>
+<div class="row">
+  <div class="col">
+    <div class="icon-badge s36"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+    <small>36 px</small>
+  </div>
+  <div class="col">
+    <div class="icon-badge s40"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+    <small>40 px</small>
+  </div>
+  <div class="col">
+    <div class="icon-badge s44"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+    <small>44 px</small>
+  </div>
+  <div class="col">
+    <div class="icon-badge s48"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+    <small>48 px</small>
+  </div>
+  <div class="col">
+    <div class="icon-badge s52"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+    <small>52 px</small>
+  </div>
+</div>
+
+<h2>C &mdash; Inside header bar (transparent icon, exact --teal blends perfectly)</h2>
+<div class="fake-header">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  </svg>
+  <div class="icon-badge s36"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+  <span class="label">36 px</span>
+</div>
+<div style="height:12px"></div>
+<div class="fake-header">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  </svg>
+  <div class="icon-badge s40"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+  <span class="label">40 px</span>
+</div>
+<div style="height:12px"></div>
+<div class="fake-header">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  </svg>
+  <div class="icon-badge s44"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+  <span class="label">44 px</span>
+</div>
+<div style="height:12px"></div>
+<div class="fake-header">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  </svg>
+  <div class="icon-badge s48"><img src="panah_backend/static/logo-icon-transparent.png" alt="" /></div>
+  <span class="label">48 px</span>
+</div>
+
+</body>
+</html>
