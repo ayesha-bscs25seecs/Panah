@@ -211,6 +211,29 @@
             </select>
           </div>
 
+          <!-- Voice Output: the PERSISTENT, per-account preference.
+               Saved under localStorage key "panah_volume_<phone>" and
+               remembered across reloads and sessions. Logged-in users only
+               (script.js un-hides it) — a guest has no account to store a
+               preference for; guests keep the session-only top-right speaker
+               button instead, which always starts ON each visit. -->
+          <div class="settings-group" id="voice-output-group" hidden>
+            <label class="settings-label" data-i18n="chat.voiceOutputLabel">Voice Output</label>
+            <button
+              id="settings-voice-toggle"
+              class="settings-toggle"
+              type="button"
+              role="switch"
+              aria-checked="true"
+            >
+              <span class="settings-toggle-track" aria-hidden="true">
+                <span class="settings-toggle-knob"></span>
+              </span>
+              <span class="settings-toggle-state" id="settings-voice-state">On</span>
+            </button>
+            <p class="settings-hint" data-i18n="chat.voiceOutputHint">Remember this choice for your account.</p>
+          </div>
+
           <!-- Clear chat history -->
           <div class="settings-group">
             <button id="settings-clear-history-btn" class="settings-danger-btn" type="button" data-i18n="chat.clearHistory">Clear all chat history</button>

@@ -7,6 +7,9 @@
  *  - Sends questions to the Flask /ask API and displays replies
  *  - Voice input via browser SpeechRecognition (toggleable Urdu/English)
  *  - Voice output via browser SpeechSynthesis (auto-reads bot replies)
+ *  - Two volume toggles that work together (see section 10):
+ *      top-right speaker button  -> session-only mute, resets on reload
+ *      Settings "Voice Output"   -> persistent, per-account preference
  *  - Typing indicator while waiting for the backend
  *  - Graceful fallback if speech APIs are unavailable
  *  - Guests: nothing is stored or logged client-side (privacy-by-default)
@@ -85,6 +88,16 @@ const LS_LOGIN_FLAG   = "panah_logged_in";
 const LS_USER_LABEL   = "panah_user_label";
 const LS_LANG_PREF    = "panah_lang_pref";
 
+/**
+ * localStorage key PREFIX for the persistent, per-account voice-output
+ * preference (the Settings panel's "Voice Output" switch).  The full key
+ * is "panah_volume_<phone>" — e.g. "panah_volume_+923001234567" — where
+ * the phone number is read from LS_USER_LABEL (set by auth.js at login).
+ * Scoping the key by phone keeps each account's preference separate on a
+ * shared device.  The top-right speaker button never touches this key.
+ */
+const LS_VOLUME_PREFIX = "panah_volume_";
+
 /* ===================================================================
    2. DOM REFERENCES
    =================================================================== */
@@ -110,14 +123,26 @@ const settingsOverlay      = document.getElementById("settings-overlay");
 const settingsCloseBtn     = document.getElementById("settings-close-btn");
 const settingsLangSelect   = document.getElementById("settings-lang-select");
 const settingsClearHistBtn = document.getElementById("settings-clear-history-btn");
+const settingsVoiceToggle  = document.getElementById("settings-voice-toggle");
+const settingsVoiceState   = document.getElementById("settings-voice-state");
+const voiceOutputGroup     = document.getElementById("voice-output-group");
 const logoutBtn            = document.getElementById("logout-btn");
 
 /* ===================================================================
    3. APPLICATION STATE
    =================================================================== */
 
-/** Whether the bot voice output is currently enabled. */
-let voiceEnabled = true;
+/**
+ * Whether bot voice output is enabled for the CURRENT page session.
+ *
+ * SESSION-ONLY STATE: the top-right speaker button flips this variable
+ * directly and it is re-initialised on every page load from the saved
+ * account preference (getSavedVolumePref).  It is NEVER written to
+ * localStorage — that is what makes the top-right button "reset on
+ * refresh".  Do not confuse it with the Settings panel's persistent
+ * "Voice Output" preference (see section 10 for the full distinction).
+ */
+let sessionVolumeOn = true;
 
 /** Whether a request to the backend is currently in flight. */
 let isWaiting = false;
@@ -377,7 +402,7 @@ async function handleSend() {
 
     appendMessage(answer, "bot");
 
-    if (voiceEnabled) {
+    if (sessionVolumeOn) {
       speakText(answer);
     }
   } catch (err) {
@@ -389,7 +414,7 @@ async function handleSend() {
         : "Maazrat, is waqt connect nahi ho pa raha. Barah-e-karam dobara koshish karein.";
     appendMessage(errorMsg, "bot");
 
-    if (voiceEnabled) {
+    if (sessionVolumeOn) {
       speakText(errorMsg);
     }
   } finally {
@@ -451,6 +476,10 @@ function setSuggestedChipsVisible(visible) {
    =================================================================== */
 
 function speakText(text) {
+  // Central volume gate: every spoken line (bot replies, error notes, the
+  // welcome greeting) funnels through here, so a muted session simply
+  // stays silent — nothing else in the message flow is affected.
+  if (!sessionVolumeOn) return;
   if (!("speechSynthesis" in window)) return;
 
   window.speechSynthesis.cancel();
@@ -583,13 +612,86 @@ function updateMicLanguageToggleLabel(btn) {
 }
 
 /* ===================================================================
-   10. SPEAKER TOGGLE  (mute / unmute bot voice)
+   10. VOLUME CONTROLS  (two toggles — persistent vs session-only!)
+   ===================================================================
+
+   READ THIS BEFORE TOUCHING THE VOLUME CODE — the two toggles look
+   similar but are deliberately different things:
+
+   1. Top-right header speaker button  ->  SESSION-ONLY override
+      Flips the in-memory `sessionVolumeOn` variable for the current
+      page load ONLY.  It never reads or writes localStorage.  On every
+      reload it is re-initialised from the saved account preference
+      (below), which is why a mute done here is "forgotten" on refresh.
+      Guests use this button too and always start unmuted (a guest has
+      no account, hence no saved preference to read).
+
+   2. Settings panel "Voice Output" switch  ->  PERSISTENT, per account
+      Reads/writes localStorage key "panah_volume_<phone>" (phone taken
+      from LS_USER_LABEL, set at login), so each account on a shared
+      device remembers its own preference.  Default when nothing is
+      stored yet: ON.  Changing it (a) saves the value immediately and
+      (b) syncs the live session state + the top-right icon, so the
+      effect is instant — no reload needed.
+
+   After page load the two are intentionally DECOUPLED: the top-right
+   button overrides the saved preference for the rest of the session
+   only, and does NOT change what Settings saved.  Refreshing the page
+   resets the session state back to whatever Settings currently says.
    =================================================================== */
 
-function toggleSpeaker() {
-  voiceEnabled = !voiceEnabled;
+/** Returns the logged-in user's phone (E.164, e.g. "+923001234567") or null. */
+function getLoggedInPhone() {
+  return localStorage.getItem(LS_USER_LABEL);
+}
 
-  if (voiceEnabled) {
+/**
+ * Reads the PERSISTENT voice-output preference for the logged-in account
+ * from "panah_volume_<phone>".  Returns true (voice on) when nothing has
+ * been stored yet, for guests, or when the phone label is missing — i.e.
+ * "on" is always the safe default.
+ */
+function getSavedVolumePref() {
+  if (!isLoggedIn) return true;
+  const phone = getLoggedInPhone();
+  if (!phone) return true;
+  // Only the exact string "false" means muted; anything else — including
+  // no stored value at all — counts as ON.
+  return localStorage.getItem(LS_VOLUME_PREFIX + phone) !== "false";
+}
+
+/** Saves the PERSISTENT voice-output preference for the logged-in account. */
+function saveVolumePref(enabled) {
+  if (!isLoggedIn) return;
+  const phone = getLoggedInPhone();
+  if (!phone) return;
+  localStorage.setItem(LS_VOLUME_PREFIX + phone, enabled ? "true" : "false");
+}
+
+/**
+ * Top-right speaker button: flips the SESSION-ONLY volume state and
+ * updates the header icon.  Deliberately does NOT touch localStorage —
+ * the saved Settings preference stays exactly as it was.
+ */
+function toggleSpeaker() {
+  sessionVolumeOn = !sessionVolumeOn;
+  updateSpeakerIcon();
+
+  // Muting mid-sentence should also stop anything being spoken right now.
+  if (!sessionVolumeOn && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+/**
+ * Syncs the top-right speaker button's icon + aria labels with the current
+ * session volume state.  Called on load and whenever EITHER toggle changes
+ * the effective session state, so the icon always reflects reality.
+ */
+function updateSpeakerIcon() {
+  if (!speakerToggle) return;
+
+  if (sessionVolumeOn) {
     speakerOnIcon.removeAttribute("hidden");
     speakerOffIcon.setAttribute("hidden", "");
     speakerToggle.setAttribute("aria-label", "Mute voice replies");
@@ -597,8 +699,45 @@ function toggleSpeaker() {
     speakerOnIcon.setAttribute("hidden", "");
     speakerOffIcon.removeAttribute("hidden");
     speakerToggle.setAttribute("aria-label", "Unmute voice replies");
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }
+}
+
+/**
+ * Settings panel "Voice Output" switch: the PERSISTENT preference.
+ * (a) saves the value to localStorage for this account, and
+ * (b) immediately applies it to the current session (state + top-right
+ *     icon) so the change is heard — or stops being heard — without a
+ *     reload.
+ */
+function handleVoicePrefToggle() {
+  if (!settingsVoiceToggle) return;
+
+  const enabled = settingsVoiceToggle.getAttribute("aria-checked") !== "true";
+  settingsVoiceToggle.setAttribute("aria-checked", String(enabled));
+  updateSettingsVoiceStateText(enabled);
+
+  saveVolumePref(enabled);      // (a) persist across sessions…
+  sessionVolumeOn = enabled;    // (b) …and apply right now.
+  updateSpeakerIcon();
+
+  if (!sessionVolumeOn && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+/** Refreshes the "On"/"Off" caption next to the Settings switch. */
+function updateSettingsVoiceStateText(enabled) {
+  if (!settingsVoiceState) return;
+  // Read the LIVE i18n language (UI_STRINGS is frozen at load time) so the
+  // caption follows language changes made from this same panel.
+  const lang = window.PanahI18n ? window.PanahI18n.getLang() : UI_LANG;
+  const strings =
+    window.PanahI18n && window.PanahI18n.I18N[lang]
+      ? window.PanahI18n.I18N[lang].chat
+      : UI_STRINGS;
+  settingsVoiceState.textContent = enabled
+    ? (strings.voiceOn || "On")
+    : (strings.voiceOff || "Off");
 }
 
 /* ===================================================================
@@ -913,6 +1052,18 @@ function handleLogout() {
 function initLoginState() {
   isLoggedIn = localStorage.getItem(LS_LOGIN_FLAG) === "1";
 
+  // Initialise the SESSION volume from the SAVED account preference.
+  // Guests have no account, so they always start unmuted (true).
+  // From here on the top-right speaker button and the Settings switch
+  // are decoupled for the rest of the session (see section 10).
+  sessionVolumeOn = getSavedVolumePref();
+  updateSpeakerIcon();
+
+  // The Settings "Voice Output" switch is only meaningful for logged-in
+  // users (a guest has no account to remember the choice for) — hide its
+  // whole group.  Guests keep the session-only top-right speaker button.
+  if (voiceOutputGroup) voiceOutputGroup.hidden = !isLoggedIn;
+
   if (isLoggedIn) {
     if (sidebar) sidebar.hidden = false;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = false;
@@ -950,6 +1101,16 @@ function openSettingsPanel() {
     const pref = localStorage.getItem(LS_LANG_PREF);
     settingsLangSelect.value = pref || "en";
   }
+  // Sync the "Voice Output" switch with the SAVED account preference —
+  // NOT with the live session state.  If the user muted via the top-right
+  // button earlier this session, Settings still shows the persistent
+  // default; that is intentional, because the two toggles are decoupled
+  // after page load (see section 10).
+  if (settingsVoiceToggle) {
+    const saved = getSavedVolumePref();
+    settingsVoiceToggle.setAttribute("aria-checked", String(saved));
+    updateSettingsVoiceStateText(saved);
+  }
   settingsOverlay.hidden = false;
 }
 
@@ -976,6 +1137,14 @@ function handleLangPrefChange() {
 
   // Re-render chips with the new language's translations
   renderSuggestedChips();
+
+  // Refresh the Settings "Voice Output" caption ("On"/"Off") so it follows
+  // the language change too.
+  if (settingsVoiceToggle) {
+    updateSettingsVoiceStateText(
+      settingsVoiceToggle.getAttribute("aria-checked") === "true"
+    );
+  }
 }
 
 /**
@@ -1048,6 +1217,7 @@ if (settingsOverlay) {
 }
 if (settingsLangSelect) settingsLangSelect.addEventListener("change", handleLangPrefChange);
 if (settingsClearHistBtn) settingsClearHistBtn.addEventListener("click", handleClearAllHistory);
+if (settingsVoiceToggle) settingsVoiceToggle.addEventListener("click", handleVoicePrefToggle);
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && "speechSynthesis" in window) {
@@ -1086,7 +1256,7 @@ function applyChatLanguage() {
   appendMessage(greeting, "bot", new Date(), { record: false });
 
   setTimeout(() => {
-    if (voiceEnabled) speakText(greeting);
+    if (sessionVolumeOn) speakText(greeting);
   }, 600);
 
   messageInput.focus();

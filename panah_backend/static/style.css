@@ -817,6 +817,80 @@ body::before {
   color: var(--cream);
 }
 
+/* --- "Voice Output" on/off switch (Settings panel, logged-in only) ---
+   The switch is a <button role="switch">; its aria-checked attribute
+   drives the track/knob position, so JS only flips that attribute. */
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cream);
+  font-family: var(--font-base);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.settings-toggle:focus {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.settings-toggle-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background-color: rgba(245, 243, 241, 0.18);
+  border: 1px solid rgba(245, 243, 241, 0.25);
+  transition: background-color 0.15s ease;
+}
+
+.settings-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--cream);
+  transition: transform 0.15s ease;
+}
+
+/* ON state: copper track, knob slid to the right */
+.settings-toggle[aria-checked="true"] .settings-toggle-track {
+  background-color: var(--copper);
+}
+
+.settings-toggle[aria-checked="true"] .settings-toggle-knob {
+  transform: translateX(18px);
+}
+
+.settings-toggle-state {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+/* Small explanatory caption under a settings control */
+.settings-hint {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgba(245, 243, 241, 0.65);
+}
+
+/* .settings-group sets display:flex, which would defeat the [hidden]
+   attribute's default display:none — enforce it explicitly (same trick
+   as .settings-overlay[hidden] above). Used to hide the Voice Output
+   group from guests. */
+.settings-group[hidden] {
+  display: none !important;
+}
+
 .settings-danger-btn {
   width: 100%;
   padding: 10px 14px;
