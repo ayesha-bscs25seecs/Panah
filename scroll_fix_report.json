@@ -1,0 +1,93 @@
+{
+  "landing": {
+    "htmlClasses": "landing-body",
+    "htmlOverflow": "visible",
+    "bodyOverflow": "visible",
+    "htmlHeight": "2153.09px",
+    "docScrollHeight": 2153,
+    "viewportHeight": 800,
+    "tallerThanViewport": true,
+    "headerSticky": "sticky"
+  },
+  "realScroll": {
+    "requested": 600,
+    "actualScrollY": 600
+  },
+  "stickyWhileScrolled": {
+    "scrollY": 600,
+    "headerTop": 0,
+    "headerVisible": true
+  },
+  "bottom": {
+    "scrollY": 1353,
+    "footerTopInViewport": 553,
+    "footerFullyVisible": false
+  },
+  "navEn": {
+    "htmlDir": "ltr",
+    "headerDirection": "ltr",
+    "links": [
+      {
+        "label": "Home",
+        "x": 754
+      },
+      {
+        "label": "About",
+        "x": 823
+      },
+      {
+        "label": "Contact",
+        "x": 893
+      },
+      {
+        "label": "Privacy & Safety",
+        "x": 974
+      },
+      {
+        "label": "Log in",
+        "x": 1109
+      },
+      {
+        "label": "Chat",
+        "x": 1179
+      }
+    ]
+  },
+  "navUr": {
+    "htmlDir": "rtl",
+    "headerDirection": "ltr",
+    "links": [
+      {
+        "label": "ہوم",
+        "x": 738
+      },
+      {
+        "label": "ہمارے بارے میں",
+        "x": 788
+      },
+      {
+        "label": "رابطہ",
+        "x": 906
+      },
+      {
+        "label": "رازداری اور حفاظت",
+        "x": 960
+      },
+      {
+        "label": "لاگ ان",
+        "x": 1088
+      },
+      {
+        "label": "بات چیت",
+        "x": 1158
+      }
+    ]
+  },
+  "chat": {
+    "htmlClasses": "",
+    "htmlOverflow": "hidden",
+    "bodyOverflow": "hidden",
+    "scrollYAfterAttempt": 0,
+    "stillLocked": true
+  }
+}

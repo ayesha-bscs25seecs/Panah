@@ -1,0 +1,79 @@
+{
+  "diagnostics": {
+    "htmlOverflow": "hidden",
+    "bodyOverflow": "hidden",
+    "bodyClientHeight": 800,
+    "bodyScrollHeight": 2059,
+    "before": {
+      "winScrollY": 0,
+      "bodyScrollTop": 0
+    },
+    "afterWinScrollY": 0,
+    "afterBodyScrollTop": 1259,
+    "docScrollHeight": 800
+  },
+  "enFooter": {
+    "htmlDir": "ltr",
+    "footerDirection": "ltr",
+    "footerTop": 553,
+    "links": [
+      {
+        "key": "nav.home",
+        "label": "Home",
+        "x": 435
+      },
+      {
+        "key": "nav.about",
+        "label": "About",
+        "x": 504
+      },
+      {
+        "key": "nav.contact",
+        "label": "Contact",
+        "x": 574
+      },
+      {
+        "key": "nav.privacy",
+        "label": "Privacy & Safety",
+        "x": 655
+      },
+      {
+        "key": "nav.chat",
+        "label": "Chat",
+        "x": 790
+      }
+    ]
+  },
+  "urFooter": {
+    "htmlDir": "rtl",
+    "footerDirection": "rtl",
+    "footerTop": 543,
+    "links": [
+      {
+        "key": "nav.home",
+        "label": "ہوم",
+        "x": 809
+      },
+      {
+        "key": "nav.about",
+        "label": "ہمارے بارے میں",
+        "x": 690
+      },
+      {
+        "key": "nav.contact",
+        "label": "رابطہ",
+        "x": 636
+      },
+      {
+        "key": "nav.privacy",
+        "label": "رازداری اور حفاظت",
+        "x": 508
+      },
+      {
+        "key": "nav.chat",
+        "label": "بات چیت",
+        "x": 428
+      }
+    ]
+  }
+}

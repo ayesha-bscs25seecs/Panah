@@ -62,6 +62,15 @@ body.landing-body {
   border-bottom: 1px solid rgba(31, 62, 67, 0.08);
 }
 
+/* Layout lock: the top bar keeps its English (LTR) arrangement in every
+   language — logo + language switcher left, nav links right, fixed order.
+   Only the link labels translate. The page-wide <html dir> flip driven by
+   i18n.js setLang() still applies to everything below the header. */
+.landing-header {
+  direction: ltr;
+  flex-direction: row;
+}
+
 .header-left {
   display: flex;
   align-items: center;
@@ -93,6 +102,7 @@ body.landing-body {
   font-weight: 600;
   text-decoration: none;
   transition: background-color 0.2s, color 0.2s;
+  unicode-bidi: plaintext; /* Urdu labels render correctly inside the LTR-locked bar */
 }
 
 .landing-nav a:hover { background-color: rgba(91, 44, 54, 0.08); color: var(--maroon); }

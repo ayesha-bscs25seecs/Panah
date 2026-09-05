@@ -1,0 +1,219 @@
+{
+  "viewport": {
+    "requested": {
+      "width": 1280,
+      "height": 800
+    },
+    "actual": "1280x800"
+  },
+  "enHeader": {
+    "viewportWidth": 1280,
+    "viewportHeight": 800,
+    "htmlDir": "ltr",
+    "htmlLang": "en",
+    "headerDirection": "ltr",
+    "headerFlexDirection": "row",
+    "headerLeftX": 28,
+    "navRight": 1252,
+    "navDirection": "ltr",
+    "links": [
+      {
+        "key": "nav.home",
+        "label": "Home",
+        "x": 769,
+        "right": 832
+      },
+      {
+        "key": "nav.about",
+        "label": "About",
+        "x": 838,
+        "right": 902
+      },
+      {
+        "key": "nav.contact",
+        "label": "Contact",
+        "x": 908,
+        "right": 983
+      },
+      {
+        "key": "nav.privacy",
+        "label": "Privacy & Safety",
+        "x": 989,
+        "right": 1118
+      },
+      {
+        "key": "nav.login",
+        "label": "Log in",
+        "x": 1124,
+        "right": 1188
+      },
+      {
+        "key": "nav.chat",
+        "label": "Chat",
+        "x": 1194,
+        "right": 1252
+      }
+    ]
+  },
+  "urHeader": {
+    "viewportWidth": 1280,
+    "viewportHeight": 800,
+    "htmlDir": "rtl",
+    "htmlLang": "ur",
+    "headerDirection": "ltr",
+    "headerFlexDirection": "row",
+    "headerLeftX": 28,
+    "navRight": 1252,
+    "navDirection": "ltr",
+    "links": [
+      {
+        "key": "nav.home",
+        "label": "ہوم",
+        "x": 753,
+        "right": 797
+      },
+      {
+        "key": "nav.about",
+        "label": "ہمارے بارے میں",
+        "x": 803,
+        "right": 915
+      },
+      {
+        "key": "nav.contact",
+        "label": "رابطہ",
+        "x": 921,
+        "right": 969
+      },
+      {
+        "key": "nav.privacy",
+        "label": "رازداری اور حفاظت",
+        "x": 975,
+        "right": 1097
+      },
+      {
+        "key": "nav.login",
+        "label": "لاگ ان",
+        "x": 1103,
+        "right": 1167
+      },
+      {
+        "key": "nav.chat",
+        "label": "بات چیت",
+        "x": 1173,
+        "right": 1252
+      }
+    ]
+  },
+  "enHeader2": {
+    "viewportWidth": 1280,
+    "viewportHeight": 800,
+    "htmlDir": "ltr",
+    "htmlLang": "en",
+    "headerDirection": "ltr",
+    "headerFlexDirection": "row",
+    "headerLeftX": 28,
+    "navRight": 1252,
+    "navDirection": "ltr",
+    "links": [
+      {
+        "key": "nav.home",
+        "label": "Home",
+        "x": 769,
+        "right": 832
+      },
+      {
+        "key": "nav.about",
+        "label": "About",
+        "x": 838,
+        "right": 902
+      },
+      {
+        "key": "nav.contact",
+        "label": "Contact",
+        "x": 908,
+        "right": 983
+      },
+      {
+        "key": "nav.privacy",
+        "label": "Privacy & Safety",
+        "x": 989,
+        "right": 1118
+      },
+      {
+        "key": "nav.login",
+        "label": "Log in",
+        "x": 1124,
+        "right": 1188
+      },
+      {
+        "key": "nav.chat",
+        "label": "Chat",
+        "x": 1194,
+        "right": 1252
+      }
+    ]
+  },
+  "aboutHeader": {
+    "viewportWidth": 1280,
+    "viewportHeight": 800,
+    "htmlDir": "rtl",
+    "htmlLang": "ur",
+    "headerDirection": "ltr",
+    "headerFlexDirection": "row",
+    "headerLeftX": 28,
+    "navRight": 1252,
+    "navDirection": "ltr",
+    "links": [
+      {
+        "key": "nav.home",
+        "label": "ہوم",
+        "x": 753,
+        "right": 797
+      },
+      {
+        "key": "nav.about",
+        "label": "ہمارے بارے میں",
+        "x": 803,
+        "right": 915
+      },
+      {
+        "key": "nav.contact",
+        "label": "رابطہ",
+        "x": 921,
+        "right": 969
+      },
+      {
+        "key": "nav.privacy",
+        "label": "رازداری اور حفاظت",
+        "x": 975,
+        "right": 1097
+      },
+      {
+        "key": "nav.login",
+        "label": "لاگ ان",
+        "x": 1103,
+        "right": 1167
+      },
+      {
+        "key": "nav.chat",
+        "label": "بات چیت",
+        "x": 1173,
+        "right": 1252
+      }
+    ]
+  },
+  "enFooter": [
+    "Home",
+    "About",
+    "Contact",
+    "Privacy & Safety",
+    "Chat"
+  ],
+  "urFooter": [
+    "ہوم",
+    "ہمارے بارے میں",
+    "رابطہ",
+    "رازداری اور حفاظت",
+    "بات چیت"
+  ]
+}
