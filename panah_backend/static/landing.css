@@ -745,7 +745,7 @@ body.landing-body {
     --section-pad-x: 28px;
   }
 
-  .landing-header { padding: 14px 28px; }
+  .landing-header { padding: 5px 28px; }
   .landing-header-logo { height: 72px; max-width: 240px; }
   .landing-nav { display: flex; }
 
