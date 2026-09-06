@@ -258,21 +258,35 @@ init_db()
 # ownership check so one user cannot read or overwrite another's chat.
 
 
+def _get_caller_auth():
+    """Verify the Bearer token from the request's Authorization header and
+    return the caller's (phone_number, uid) pair, or (None, None) if the
+    token is missing/invalid.
+
+    Used by endpoints that need more than just the phone number —
+    e.g. /delete-account needs the uid to remove the Firebase Auth
+    record.  Like _get_caller_phone(), the identity ALWAYS comes from the
+    verified session token, never from a value typed by the user.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None, None
+    id_token = auth_header[7:]
+    if not id_token or firebase_app is None:
+        return None, None
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+        return decoded.get("phone_number"), decoded.get("uid")
+    except Exception:
+        logger.warning("Bearer token verification failed in authenticated endpoint")
+        return None, None
+
+
 def _get_caller_phone():
     """Verify the Bearer token from the request's Authorization header
     and return the caller's phone number, or None if missing/invalid."""
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        return None
-    id_token = auth_header[7:]
-    if not id_token or firebase_app is None:
-        return None
-    try:
-        decoded = firebase_auth.verify_id_token(id_token)
-        return decoded.get("phone_number")
-    except Exception:
-        logger.warning("Bearer token verification failed in chat endpoint")
-        return None
+    phone, _uid = _get_caller_auth()
+    return phone
 
 
 def _chat_row(row):
@@ -350,6 +364,20 @@ def delete_chat(chat_id: str):
     conn.close()
 
 
+def delete_account_data(phone: str) -> None:
+    """Delete ALL backend-stored data for a phone number — every chat row
+    AND the user row — in a single transaction, so a mid-flight failure can
+    never leave one without the other.  Used only by POST /delete-account
+    (the per-chat endpoints use delete_chat instead)."""
+    conn = _get_db()
+    try:
+        conn.execute("DELETE FROM chats WHERE phone = ?", (phone,))
+        conn.execute("DELETE FROM users WHERE phone = ?", (phone,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 @app.route("/chats", methods=["GET"])
 def chats_list():
     """List all chat summaries for the authenticated user."""
@@ -408,6 +436,81 @@ def chats_delete(chat_id):
         return jsonify({"error": "Chat not found."}), 404
     delete_chat(chat_id)
     return jsonify({"success": True})
+
+
+@app.route("/delete-account", methods=["POST"])
+def delete_account():
+    """Permanently delete the authenticated caller's account — a HARD
+    delete, no soft-delete/flags anywhere.
+
+    The phone number AND Firebase UID are read from the caller's verified
+    ID token (the current authenticated session — the same one the frontend
+    already uses to load chat history), NEVER from the request body.  So a
+    user can only ever delete their own account, and never has to re-enter
+    their phone number or an OTP to do it.
+
+    Order of operations (chosen so the worst partial failure is recoverable):
+      1. All backend-stored data: every chat row + the user row, in ONE
+         SQLite transaction (delete_account_data).
+      2. The Firebase Auth record, by UID from the token.
+
+    If step 2 fails after step 1 succeeded, the error is logged server-side
+    with the phone + UID for manual cleanup and a 500 is returned, so the
+    frontend does NOT sign the user out — they stay logged in and can
+    simply retry (a retried call no-ops on the already-cleared local data).
+
+    NOTE (hackathon): auth currently runs on the Firebase Local Emulator
+    Suite (FIREBASE_AUTH_EMULATOR_HOST).  firebase_admin's delete_user()
+    talks to the emulator in dev and to the real Firebase Auth service in
+    production with NO code changes, so this endpoint carries over cleanly
+    once the project is pointed at a real Firebase project.
+    """
+    if firebase_app is None:
+        return jsonify({
+            "error": "Firebase Admin not configured on the server. "
+                     "Set GOOGLE_APPLICATION_CREDENTIALS to your service account JSON.",
+        }), 500
+
+    phone, uid = _get_caller_auth()
+    if not phone or not uid:
+        return jsonify({"error": "Authentication required."}), 401
+
+    # 1. Delete every stored chat and the user row atomically.
+    try:
+        delete_account_data(phone)
+    except Exception:
+        logger.exception(
+            "Account deletion FAILED before any data was removed "
+            "(phone=%s, uid=%s) — nothing deleted; investigate server-side.",
+            phone, uid,
+        )
+        return jsonify({"error": "Failed to delete account data."}), 500
+
+    # 2. Delete the Firebase Auth record using the UID from the session token.
+    try:
+        firebase_auth.delete_user(uid)
+    except firebase_auth.UserNotFoundError:
+        # Already deleted (e.g. the user retried after a partial failure) —
+        # treat as success so the endpoint stays idempotent.
+        logger.info(
+            "Firebase Auth record for uid=%s (phone=%s) was already "
+            "deleted — treating as success.",
+            uid, phone,
+        )
+    except Exception:
+        # Local data is gone but the auth record could not be removed. Log
+        # everything an operator needs for manual cleanup; the 500 makes the
+        # frontend keep the user logged in (see handleDeleteAccount there).
+        logger.exception(
+            "Account deletion PARTIAL FAILURE: backend data was deleted for "
+            "phone=%s but the Firebase Auth record (uid=%s) could NOT be "
+            "deleted — MANUAL CLEANUP REQUIRED.",
+            phone, uid,
+        )
+        return jsonify({"error": "Failed to delete the Firebase Auth user."}), 500
+
+    logger.info("Account permanently deleted (phone=%s, uid=%s)", phone, uid)
+    return jsonify({"success": True, "phone": phone})
 
 
 @app.route("/verify-session", methods=["POST"])

@@ -238,6 +238,43 @@
           <div class="settings-group">
             <button id="settings-clear-history-btn" class="settings-danger-btn" type="button" data-i18n="chat.clearHistory">Clear all chat history</button>
           </div>
+
+          <!-- Delete account: permanently removes the account itself (Firebase
+               Auth record + ALL backend chat history). Logged-in users only —
+               script.js un-hides this group, same as the Voice Output group.
+               Destructive action (red styling) with a two-click confirmation
+               flow: this button only opens the confirmation dialog below;
+               confirming deletes immediately with no further input — the
+               phone number/UID is taken from the current login session,
+               never re-typed by the user. -->
+          <div class="settings-group" id="delete-account-group" hidden>
+            <button id="settings-delete-account-btn" class="settings-danger-btn" type="button" data-i18n="chat.deleteAccount">Delete Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DELETE ACCOUNT CONFIRMATION DIALOG =====
+         Click 2 of the flow. Opened on top of the still-open Settings
+         overlay; Cancel returns to Settings. Confirming calls
+         POST /delete-account with the session's Firebase ID token — on
+         success script.js clears local state, signs out, and reloads this
+         same page as a guest; on failure a localized inline error is shown
+         and the user stays logged in. All strings are data-i18n driven so
+         they follow the Settings language preference (Urdu/English). -->
+    <div id="delete-account-overlay" class="settings-overlay delete-account-overlay" hidden>
+      <div id="delete-account-dialog" class="settings-panel" role="alertdialog" aria-modal="true" aria-labelledby="delete-account-title" aria-describedby="delete-account-message">
+        <div class="settings-header">
+          <h2 class="settings-title" id="delete-account-title" data-i18n="chat.deleteAccountTitle">Delete account?</h2>
+        </div>
+        <div class="settings-body">
+          <p id="delete-account-message" class="delete-account-message" data-i18n="chat.deleteAccountConfirm">Are you sure you want to delete your account? This will permanently delete your chat history and cannot be undone.</p>
+          <!-- Shown only when deletion fails — the user stays logged in -->
+          <p id="delete-account-error" class="delete-account-error" hidden data-i18n="chat.deleteAccountError">Sorry, we couldn't delete your account right now. Please try again.</p>
+          <div class="delete-account-actions">
+            <button id="delete-account-cancel-btn" class="settings-cancel-btn" type="button" data-i18n="chat.deleteAccountCancel">Cancel</button>
+            <button id="delete-account-confirm-btn" class="settings-danger-btn" type="button" data-i18n="chat.deleteAccountConfirmBtn">Confirm Delete</button>
+          </div>
         </div>
       </div>
     </div>

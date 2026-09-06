@@ -910,6 +910,67 @@ body::before {
 }
 
 /* ==========================================================================
+   DELETE ACCOUNT CONFIRMATION DIALOG
+   (opened from the Settings panel's "Delete Account" button)
+   ========================================================================== */
+/* Sits ABOVE the still-open Settings overlay (z-index 100) so it reads as
+   a nested confirmation step, reusing the settings-panel look. */
+.delete-account-overlay {
+  z-index: 110;
+}
+
+.delete-account-message {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--cream);
+}
+
+/* Inline error, shown only when the server-side deletion fails. Light red —
+   var(--danger) itself is too dark to stay readable on the teal panel. */
+.delete-account-error {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #ff9d8a;
+}
+.delete-account-error[hidden] { display: none !important; }
+
+.delete-account-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.delete-account-actions > button {
+  flex: 1;
+}
+
+/* Neutral counterpart to .settings-danger-btn for the dialog's Cancel
+   button — same metrics, cream-on-teal ghost styling instead of red. */
+.settings-cancel-btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 243, 241, 0.3);
+  background: rgba(245, 243, 241, 0.08);
+  color: var(--cream);
+  font-family: var(--font-base);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.settings-cancel-btn:hover {
+  background: rgba(245, 243, 241, 0.18);
+  border-color: rgba(245, 243, 241, 0.5);
+}
+.settings-cancel-btn:focus {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+.settings-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
    DESKTOP ENHANCEMENTS (min-width: 600px)
    ========================================================================== */
 @media (min-width: 600px) {

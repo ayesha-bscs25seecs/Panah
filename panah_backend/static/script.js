@@ -127,6 +127,12 @@ const settingsVoiceToggle  = document.getElementById("settings-voice-toggle");
 const settingsVoiceState   = document.getElementById("settings-voice-state");
 const voiceOutputGroup     = document.getElementById("voice-output-group");
 const logoutBtn            = document.getElementById("logout-btn");
+const settingsDeleteAcctBtn = document.getElementById("settings-delete-account-btn");
+const deleteAccountGroup    = document.getElementById("delete-account-group");
+const deleteAcctOverlay     = document.getElementById("delete-account-overlay");
+const deleteAcctCancelBtn   = document.getElementById("delete-account-cancel-btn");
+const deleteAcctConfirmBtn  = document.getElementById("delete-account-confirm-btn");
+const deleteAcctError       = document.getElementById("delete-account-error");
 
 /* ===================================================================
    3. APPLICATION STATE
@@ -163,6 +169,9 @@ let micLanguage = UI_LANG === "en" ? "en" : "ur";
 
 /** Whether the current visitor is logged in (read once at init). */
 let isLoggedIn = false;
+
+/** Whether a POST /delete-account request is currently in flight. */
+let isDeletingAccount = false;
 
 /**
  * In-memory transcript of the CURRENT chat only.
@@ -1153,6 +1162,9 @@ function initLoginState() {
   // whole group.  Guests keep the session-only top-right speaker button.
   if (voiceOutputGroup) voiceOutputGroup.hidden = !isLoggedIn;
 
+  // Same for "Delete Account": a guest has no account to delete.
+  if (deleteAccountGroup) deleteAccountGroup.hidden = !isLoggedIn;
+
   if (isLoggedIn) {
     if (sidebar) sidebar.hidden = false;
     if (sidebarToggleBtn) sidebarToggleBtn.hidden = false;
@@ -1276,6 +1288,125 @@ async function handleClearAllHistory() {
 }
 
 /* ===================================================================
+   11c. DELETE ACCOUNT  (destructive — two-click flow, Settings panel)
+   ===================================================================
+
+   Click 1: the Settings "Delete Account" button opens the confirmation
+   dialog (openDeleteAccountDialog).  No further input is ever requested —
+   the phone number/UID is taken from the CURRENT login session, the same
+   Firebase ID token already used to load the user's chat history.
+
+   Click 2: "Confirm Delete" immediately calls POST /delete-account
+   (handleDeleteAccount).  Deletion is permanent — no soft-delete — and
+   the backend removes both the Firebase Auth record and every stored
+   chat.
+
+   On success ONLY: local state is cleared, the Firebase client session
+   is signed out, and the page reloads as the guest chat page.  On failure
+   the user stays logged in and a localized error is shown in the dialog
+   so they can retry or cancel — we never sign out before the server has
+   actually confirmed the deletion.
+
+   All dialog strings are data-i18n driven, so they follow the Settings
+   language preference exactly like every other Settings label.
+
+   NOTE (hackathon): auth runs on the Firebase Local Emulator Suite, but
+   this flow only relies on standard ID-token auth + the backend's
+   firebase_admin delete_user(), so it carries over cleanly to a real
+   Firebase project without changes.
+   =================================================================== */
+
+/** Click 1 — opens the confirmation dialog on top of Settings. */
+function openDeleteAccountDialog() {
+  if (!deleteAcctOverlay) return;
+  // Reset any error/disabled state left over from a previous attempt.
+  if (deleteAcctError) deleteAcctError.hidden = true;
+  if (deleteAcctConfirmBtn) deleteAcctConfirmBtn.disabled = false;
+  deleteAcctOverlay.hidden = false;
+}
+
+/** Closes the confirmation dialog (returns to the Settings panel). */
+function closeDeleteAccountDialog() {
+  if (deleteAcctOverlay) deleteAcctOverlay.hidden = true;
+}
+
+/** Click 2 — confirms deletion. Immediate, permanent, no further input. */
+async function handleDeleteAccount() {
+  if (!isLoggedIn || isDeletingAccount) return;
+
+  const token = await _getIdToken();
+  if (!token) {
+    // No usable session token — treat exactly like a failed deletion:
+    // show the localized error and keep the user logged in.
+    if (deleteAcctError) deleteAcctError.hidden = false;
+    return;
+  }
+
+  // Guard against double-submission while the request is in flight.
+  isDeletingAccount = true;
+  if (deleteAcctConfirmBtn) deleteAcctConfirmBtn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/delete-account`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      throw new Error(`delete-account failed with status ${res.status}`);
+    }
+
+    // Deletion succeeded — only NOW clear local state and sign out.
+    await _completeAccountDeletion();
+  } catch (err) {
+    console.error("Account deletion failed:", err);
+    // Deletion did NOT succeed: nothing local is cleared and the user is
+    // NOT logged out — surface a clear, localized error in the dialog so
+    // they can retry or cancel.  (Server-side failures are logged by the
+    // backend for manual cleanup.)
+    if (deleteAcctError) deleteAcctError.hidden = false;
+    if (deleteAcctConfirmBtn) deleteAcctConfirmBtn.disabled = false;
+  } finally {
+    isDeletingAccount = false;
+  }
+}
+
+/**
+ * Runs ONLY after the server has confirmed the account is deleted:
+ * clears all local/session state (login flag, user label, per-account
+ * preference keys, cached chat data, sidebar history), signs out the
+ * Firebase client session, and reloads the chat page (index.html) in its
+ * logged-out guest state.
+ */
+async function _completeAccountDeletion() {
+  const phone = getLoggedInPhone();
+
+  // 1. Clear login state + this account's per-user preference keys.
+  localStorage.removeItem(LS_LOGIN_FLAG);
+  localStorage.removeItem(LS_USER_LABEL);
+  if (phone) localStorage.removeItem(LS_VOLUME_PREFIX + phone);
+
+  // 2. Clear in-memory chat data and the sidebar history list.  Setting
+  //    isLoggedIn = false FIRST also stops the beforeunload handler from
+  //    trying to re-save the current (server-deleted) chat on navigation.
+  isLoggedIn = false;
+  currentChatId = null;
+  currentMessages = [];
+  if (historyListEl) historyListEl.innerHTML = "";
+
+  // 3. End the client-side Firebase session.  Best-effort: signOut only
+  //    clears local state, so a failure here never blocks the redirect.
+  try {
+    if (typeof firebase !== "undefined") await firebase.auth().signOut();
+  } catch {
+    /* ignore — the server-side record is already deleted */
+  }
+
+  // 4. Reload as the guest chat page.  /chat serves index.html; with the
+  //    login flag cleared it re-initialises in the logged-out state.
+  window.location.href = "/chat";
+}
+
+/* ===================================================================
    12. EVENT LISTENERS
    =================================================================== */
 
@@ -1307,6 +1438,20 @@ if (settingsOverlay) {
 if (settingsLangSelect) settingsLangSelect.addEventListener("change", handleLangPrefChange);
 if (settingsClearHistBtn) settingsClearHistBtn.addEventListener("click", handleClearAllHistory);
 if (settingsVoiceToggle) settingsVoiceToggle.addEventListener("click", handleVoicePrefToggle);
+
+// --- Delete account confirmation dialog ---
+if (settingsDeleteAcctBtn) settingsDeleteAcctBtn.addEventListener("click", openDeleteAccountDialog);
+if (deleteAcctCancelBtn) deleteAcctCancelBtn.addEventListener("click", () => {
+  // Ignore once a deletion request is in flight (the dialog must stay put
+  // so the pending state — and any eventual error — remains visible).
+  if (!isDeletingAccount) closeDeleteAccountDialog();
+});
+if (deleteAcctConfirmBtn) deleteAcctConfirmBtn.addEventListener("click", handleDeleteAccount);
+if (deleteAcctOverlay) {
+  deleteAcctOverlay.addEventListener("click", (e) => {
+    if (e.target === deleteAcctOverlay && !isDeletingAccount) closeDeleteAccountDialog();
+  });
+}
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && "speechSynthesis" in window) {
