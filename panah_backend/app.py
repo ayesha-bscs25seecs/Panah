@@ -149,7 +149,7 @@ def redirect_privacy():
 # endpoint, per the project's confirmed working setup (qwen-plus-character
 # has free quota on the team account; plain qwen-plus/qwen-flash did not).
 DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY")
-DASHSCOPE_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+DASHSCOPE_BASE_URL = "https://ws-ad6fbmy7z0chcf98.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
 MODEL_NAME = "qwen-plus-character"
 
 client = None
