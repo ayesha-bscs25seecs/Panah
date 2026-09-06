@@ -48,13 +48,16 @@ Run locally:
     python app.py
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import re
 import json
 import random
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, Response
 from flask_cors import CORS
 from openai import OpenAI
 
@@ -1060,6 +1063,7 @@ def ask():
             "matched_topic": None,
             "matched_question": None,
             "sources": [],
+            "response_language": classification["language"],
         })
 
     # 1. Primary retrieval attempt -- always try the question on its own
@@ -1105,6 +1109,7 @@ def ask():
             "matched_topic": None,
             "matched_question": None,
             "sources": [],
+            "response_language": classification["language"],
         })
 
     logger.info(
@@ -1137,6 +1142,7 @@ def ask():
             "matched_question": matched_entry["question"],
             "sources": matched_entry.get("sources", []),
             "note": "LLM not called — DASHSCOPE_API_KEY not set. Returning raw KB chunk.",
+            "response_language": classification["language"],
         })
 
     try:
@@ -1175,6 +1181,7 @@ def ask():
             "matched_question": matched_entry["question"],
             "sources": matched_entry.get("sources", []),
             "note": f"LLM call failed ({e.__class__.__name__}) — returning raw KB chunk.",
+            "response_language": classification["language"],
         })
 
     return jsonify({
@@ -1182,7 +1189,60 @@ def ask():
         "matched_topic": matched_entry["topic_id"],
         "matched_question": matched_entry["question"],
         "sources": matched_entry.get("sources", []),
+        "response_language": classification["language"],
     })
+
+
+# --- Azure Text-to-Speech for Urdu responses ----------------------------
+@app.route("/api/tts-urdu", methods=["POST"])
+def tts_urdu():
+    """Synthesize Urdu text to speech using Azure Cognitive Services.
+
+    Expects JSON body: {"text": "...Urdu text..."}
+    Returns: WAV audio (audio/wav) or a JSON error on failure.
+    """
+    import azure.cognitiveservices.speech as speechsdk
+
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "Missing 'text' in request body."}), 400
+
+    speech_key = os.environ.get("AZURE_SPEECH_KEY")
+    speech_region = os.environ.get("AZURE_SPEECH_REGION", "centralindia")
+
+    if not speech_key:
+        return jsonify({"error": "AZURE_SPEECH_KEY not configured on the server."}), 500
+
+    try:
+        speech_config = speechsdk.SpeechConfig(
+            subscription=speech_key, region=speech_region
+        )
+        speech_config.speech_synthesis_voice_name = "ur-PK-UzmaNeural"
+
+        # audio_config=None tells the SDK to return raw bytes in
+        # result.audio_data instead of trying to play through a speaker
+        # device (which would fail on a headless server).
+        synthesizer = speechsdk.SpeechSynthesizer(
+            speech_config=speech_config, audio_config=None
+        )
+        result = synthesizer.speak_text_async(text).get()
+
+        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            audio_data = result.audio_data
+            return Response(audio_data, mimetype="audio/wav")
+        else:
+            error_detail = result.properties.get(
+                speechsdk.PropertyId.SpeechServiceResponse_JsonErrorDetails
+            )
+            logger.error("Azure TTS synthesis failed: %s", error_detail)
+            return jsonify({
+                "error": "Speech synthesis failed.",
+                "details": error_detail,
+            }), 500
+    except Exception as e:
+        logger.exception("Azure TTS endpoint error")
+        return jsonify({"error": "Speech synthesis failed.", "details": str(e)}), 500
 
 
 @app.route("/health", methods=["GET"])

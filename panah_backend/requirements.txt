@@ -2,3 +2,5 @@ flask
 openai
 flask-cors
 sentence-transformers
+python-dotenv
+azure-cognitiveservices-speech

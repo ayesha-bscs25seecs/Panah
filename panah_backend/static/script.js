@@ -403,7 +403,7 @@ async function handleSend() {
     appendMessage(answer, "bot");
 
     if (sessionVolumeOn) {
-      speakText(answer);
+      speakText(answer, data?.response_language);
     }
   } catch (err) {
     hideTypingIndicator();
@@ -475,25 +475,108 @@ function setSuggestedChipsVisible(visible) {
    8. SPEECH SYNTHESIS  (Text-to-Speech — bot reads replies aloud)
    =================================================================== */
 
-function speakText(text) {
-  // Central volume gate: every spoken line (bot replies, error notes, the
-  // welcome greeting) funnels through here, so a muted session simply
-  // stays silent — nothing else in the message flow is affected.
+function speakText(text, replyLanguage) {
+  // ── Mute gate (checked FIRST — no API call, no characters spent) ──
+  if (!sessionVolumeOn) return;
+
+  // Route TTS using the backend's detected question language (returned as
+  // response_language in the /ask reply) when available.  This is far more
+  // reliable than guessing from the response text, which often mixes Urdu
+  // with English legal/financial terms.
+  let useUrduTTS;
+  if (replyLanguage) {
+    useUrduTTS = (replyLanguage === "urdu_script" || replyLanguage === "roman_urdu");
+  } else {
+    // Fallback: text-based detection (welcome messages, client-side errors,
+    // or older backend responses without response_language).
+    const urduScriptRe = /[\u0600-\u06FF]/;
+    if (urduScriptRe.test(text)) {
+      useUrduTTS = true;
+    } else {
+      const englishHintWords = new Set([
+        "the","is","are","what","how","why","when","where","can","do",
+        "does","my","husband","wife","money","rights","should","will",
+        "please","help","get","give","have","need","want",
+      ]);
+      const words = (text.toLowerCase().match(/[a-z']+/g) || []);
+      const hits = words.filter((w) => englishHintWords.has(w)).length;
+      useUrduTTS = !(hits >= 3);
+    }
+  }
+
+  if (useUrduTTS) {
+    // ── Urdu / Roman Urdu → Azure TTS ──
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/tts-urdu`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
+
+        // Re-check mute in case the user toggled while the request was in flight
+        if (!sessionVolumeOn) return;
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        await audio.play();
+      } catch (err) {
+        console.warn("Azure TTS failed, falling back to browser TTS:", err);
+        _speakBrowserFallback(text);
+      }
+    })();
+  } else {
+    // ── English → browser SpeechSynthesis (female voice) ──
+    _speakBrowserEnglish(text);
+  }
+}
+
+/**
+ * Browser SpeechSynthesis with a female English voice.
+ * Used as the primary path for English replies and as a fallback when
+ * Azure TTS fails for Urdu replies.
+ */
+function _speakBrowserEnglish(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  utterance.rate = 0.95;
+  utterance.pitch = 1.0;
+
+  const voices = window.speechSynthesis.getVoices();
+  const femaleVoice = voices.find((v) =>
+    /female|woman/i.test(v.name)
+  );
+  if (femaleVoice) utterance.voice = femaleVoice;
+
+  window.speechSynthesis.speak(utterance);
+}
+
+/**
+ * Fallback browser TTS — tries a female English voice first, then any
+ * available voice.  Called when Azure TTS fails so the user still hears
+ * audio rather than silence.
+ */
+function _speakBrowserFallback(text) {
   if (!sessionVolumeOn) return;
   if (!("speechSynthesis" in window)) return;
 
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = SPEECH_LANG;
+  utterance.lang = "en-US";
   utterance.rate = 0.95;
-  utterance.pitch = 1.0;
 
   const voices = window.speechSynthesis.getVoices();
-  const urduVoice = voices.find(
-    (v) => v.lang === SPEECH_LANG || v.lang.startsWith("ur")
-  );
-  if (urduVoice) utterance.voice = urduVoice;
+  const femaleVoice = voices.find((v) => /female|woman/i.test(v.name));
+  const anyVoice = voices.find((v) => v.lang.startsWith("en"));
+  if (femaleVoice) utterance.voice = femaleVoice;
+  else if (anyVoice) utterance.voice = anyVoice;
 
   window.speechSynthesis.speak(utterance);
 }
