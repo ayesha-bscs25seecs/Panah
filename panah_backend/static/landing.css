@@ -127,6 +127,89 @@ body.landing-body {
 .landing-nav .landing-nav-chat:active { background-color: rgba(91, 44, 54, 0.12); color: var(--maroon); }
 
 /* ==========================================================================
+   MOBILE NAV (hamburger)
+   At 768px and below the six nav links collapse into a hamburger button on
+   the right of the header. .landing-nav itself becomes the slide-down panel
+   (same links, same data-i18n labels, same active-page highlight), anchored
+   under the sticky header. The LTR layout lock above still applies, so the
+   bar keeps the logo + language switcher on the left untouched. Above 768px
+   the button is display:none and the bar is identical to the desktop layout.
+   ========================================================================== */
+.nav-toggle-btn {
+  display: none; /* mobile only — switched on inside the max-width query below */
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(31, 62, 67, 0.08);
+  color: var(--teal);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.nav-toggle-btn:hover { background-color: rgba(31, 62, 67, 0.14); }
+
+/* Desktop: the six links return to the bar. Kept above 768px (not the old
+   680px) so the hamburger owns everything at max-width: 768px. */
+@media (min-width: 769px) {
+  .landing-nav { display: flex; }
+}
+
+@media (max-width: 768px) {
+  .nav-toggle-btn { display: inline-flex; }
+
+  /* The nav links turn into the slide-down panel (absolute, so opening it
+     never shifts the page below — it overlays it like the lang dropdown). */
+  .landing-nav {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    right: 16px;
+    z-index: 40;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 8px;
+    background-color: var(--white);
+    border: 1px solid rgba(31, 62, 67, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+  }
+
+  /* nav-menu.js toggles this class on the nav element */
+  .landing-nav.nav-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .landing-nav a {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  /* Chat keeps its maroon primary-pill styling, stretched to the panel width */
+  .landing-nav .landing-nav-chat {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 10px 14px;
+  }
+}
+
+/* ==========================================================================
    LANGUAGE SWITCHER
    A persistent dropdown button placed next to the Panah logo.
    Base styles (light theme) — dark-header overrides in style.css / auth.css.
@@ -747,7 +830,6 @@ body.landing-body {
 
   .landing-header { padding: 5px 28px; }
   .landing-header-logo { height: 72px; max-width: 240px; }
-  .landing-nav { display: flex; }
 
   .hero { padding: 88px var(--section-pad-x) 110px; }
   .hero-logo { width: 340px; }
@@ -791,6 +873,8 @@ html.lang-ur .value-card h3 {
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  .landing-nav,
+  .nav-toggle-btn,
   .landing-nav a,
   .landing-nav-chat,
   .cta-primary,

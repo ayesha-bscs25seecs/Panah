@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    <nav class="landing-nav" aria-label="Main navigation">
+    <nav class="landing-nav" id="landing-nav" aria-label="Main navigation">
       <a href="{{ url_for('home') }}" class="{{ 'active' if active_page == 'home' else '' }}" data-i18n="nav.home">Home</a>
       <a href="{{ url_for('about') }}" class="{{ 'active' if active_page == 'about' else '' }}" data-i18n="nav.about">About</a>
       <a href="{{ url_for('contact') }}" class="{{ 'active' if active_page == 'contact' else '' }}" data-i18n="nav.contact">Contact</a>
@@ -68,6 +68,20 @@
       <a href="{{ url_for('auth_page') }}" class="landing-nav-login" data-i18n="nav.login">Login</a>
       <a href="{{ url_for('chat_page') }}" class="landing-nav-chat" data-i18n="nav.chat">Chat</a>
     </nav>
+
+    <!-- Mobile hamburger — replaces .landing-nav below 768px (see landing.css).
+         nav-menu.js toggles the .nav-open class that turns .landing-nav into
+         the slide-down panel; above 768px the button stays display:none and
+         the bar is identical to the desktop layout. -->
+    <button id="nav-toggle-btn" class="nav-toggle-btn" type="button"
+            aria-label="Toggle menu" aria-expanded="false" aria-controls="landing-nav"
+            data-i18n-attr="aria-label:nav.menuToggle">
+      <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
   </header>
 
   {% block content %}{% endblock %}
@@ -123,6 +137,12 @@
     </div>
   </div>
 
+  {# nav-menu.js (header hamburger) is loaded OUTSIDE the overridable scripts
+     block: pages that override {% block scripts %} without super() (e.g.
+     homepage.html adds entry.js) would otherwise drop it and lose the mobile
+     menu. It has no dependencies and guards its DOM lookups, so it is safe
+     to load before i18n.js / lang-switcher.js. #}
+  <script src="{{ url_for('static', filename='nav-menu.js') }}"></script>
   {% block scripts %}
   <script src="{{ url_for('static', filename='i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='lang-switcher.js') }}"></script>

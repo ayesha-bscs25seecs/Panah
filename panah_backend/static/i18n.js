@@ -18,6 +18,7 @@ const I18N = {
       privacy: "رازداری اور حفاظت",
       login: "لاگ ان",
       chat: "بات چیت",
+      menuToggle: "مینو کھولیں یا بند کریں",
     },
     hero: {
       title: "جہاں سوالات بھی محفوظ ہیں",
@@ -174,6 +175,7 @@ const I18N = {
       privacy: "Privacy & Safety",
       login: "Log in",
       chat: "Chat",
+      menuToggle: "Toggle menu",
     },
     hero: {
       title: "Where even questions are safe",
@@ -330,6 +332,7 @@ const I18N = {
       privacy: "Privacy aur Hifazat",
       login: "Log in",
       chat: "Baat cheet",
+      menuToggle: "Menu kholain ya band karein",
     },
     hero: {
       title: "Jahan sawal bhi mehfooz hain",
