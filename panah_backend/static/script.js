@@ -153,6 +153,9 @@ let recognition = null;
 /** Whether the mic is currently actively listening. */
 let isListening = false;
 
+/** Reference to the currently-playing Azure TTS Audio element (null if idle). */
+let currentAzureAudio = null;
+
 /**
  * Which language the mic should listen in: "ur" or "en".
  */
@@ -521,7 +524,8 @@ function speakText(text, replyLanguage) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
-        audio.onended = () => URL.revokeObjectURL(url);
+        currentAzureAudio = audio;
+        audio.onended = () => { URL.revokeObjectURL(url); currentAzureAudio = null; };
         await audio.play();
       } catch (err) {
         console.warn("Azure TTS failed, falling back to browser TTS:", err);
@@ -761,8 +765,9 @@ function toggleSpeaker() {
   updateSpeakerIcon();
 
   // Muting mid-sentence should also stop anything being spoken right now.
-  if (!sessionVolumeOn && "speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
+  if (!sessionVolumeOn) {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (currentAzureAudio) { currentAzureAudio.pause(); currentAzureAudio = null; }
   }
 }
 
@@ -803,8 +808,9 @@ function handleVoicePrefToggle() {
   sessionVolumeOn = enabled;    // (b) …and apply right now.
   updateSpeakerIcon();
 
-  if (!sessionVolumeOn && "speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
+  if (!sessionVolumeOn) {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (currentAzureAudio) { currentAzureAudio.pause(); currentAzureAudio = null; }
   }
 }
 
