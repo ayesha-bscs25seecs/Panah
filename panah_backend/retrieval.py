@@ -249,7 +249,7 @@ if __name__ == "__main__":
     ]
 
     print("\n" + "=" * 60)
-    print("RUNNING RAG BACKEND ROUTER BENCHMARK (Threshold: 0.65)")
+    print(f"RUNNING RAG BACKEND ROUTER BENCHMARK (Threshold: {DEFAULT_SIMILARITY_THRESHOLD})")
     print("=" * 60)
 
     for q in test_questions:

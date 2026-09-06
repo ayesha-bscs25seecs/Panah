@@ -710,7 +710,28 @@ def build_final_user_message(
     language_label: str,
     supporting_entries: list | None = None,
 ) -> str:
-    context_lines = [f"Verified information (primary match):\n{matched_entry['answer']}"]
+    # Defense-in-depth cap: even after knowledge_base.json was repaired to
+    # remove oversized "answer" blobs (see fix_knowledge_base.py), this
+    # keeps a single bad/oversized entry from ever again dominating the
+    # prompt and derailing the LLM's answer if bad data is merged back in
+    # later. Truncating on a sentence boundary is a last resort, not a
+    # normal code path.
+    MAX_CONTEXT_CHARS = 2200
+
+    def _cap(text: str) -> str:
+        if len(text) <= MAX_CONTEXT_CHARS:
+            return text
+        logger.warning(
+            "KB entry exceeds MAX_CONTEXT_CHARS (%d > %d) -- truncating. "
+            "This should not happen after fix_knowledge_base.py; check for "
+            "newly merged oversized entries.",
+            len(text), MAX_CONTEXT_CHARS,
+        )
+        cut = text[:MAX_CONTEXT_CHARS]
+        last_break = max(cut.rfind(". "), cut.rfind("\n"))
+        return cut[: last_break + 1] if last_break > MAX_CONTEXT_CHARS * 0.6 else cut
+
+    context_lines = [f"Verified information (primary match):\n{_cap(matched_entry['answer'])}"]
 
     # For broad/general questions, retrieval may have scored one narrow entry
     # highest just by keyword coincidence. Supporting entries from the same
@@ -719,7 +740,7 @@ def build_final_user_message(
     for extra in (supporting_entries or []):
         context_lines.append(
             f"\nVerified information (related, same topic — "
-            f"\"{extra['question']}\"):\n{extra['answer']}"
+            f"\"{extra['question']}\"):\n{_cap(extra['answer'])}"
         )
 
     if matched_entry.get("legal_basis"):
@@ -774,6 +795,48 @@ def _is_likely_followup_reply(text: str) -> bool:
     "yes"/"haan". Deliberately narrow: this is what limits the fallback below
     to short acknowledgements only, not to genuine (if terse) new questions."""
     return len(text.split()) <= 3
+
+
+# Pure closing/gratitude remarks ("shukriya", "thanks", "ok", "theek hai")
+# are NOT follow-up questions and should never be pushed through KB
+# retrieval. They previously fell into the same "short reply -> pull in
+# last user turn and search for a match" path as genuine continuations
+# like "haan"/"yes", which could and did match some unrelated KB entry by
+# keyword coincidence with whatever was discussed earlier (e.g. "shukriya"
+# after a domestic-violence question matched an unrelated maintenance
+# entry, just because both conversations mentioned "shohar"). A closing
+# remark needs a short warm acknowledgement, never a forced legal answer.
+_CLOSING_PHRASES = {
+    "shukriya", "shukria", "thanks", "thank you", "thankyou", "thanku",
+    "ok", "okay", "k", "acha", "achha", "theek hai", "thik hai", "theek",
+    "thik", "samajh gayi", "samajh gai", "samjh gayi", "bye", "khuda hafiz",
+    "allah hafiz", "jazakallah", "jazak allah", "shukar hai",
+}
+
+
+def _is_closing_remark(text: str) -> bool:
+    """True only when the ENTIRE message is one of the known closing/
+    gratitude phrases (ignoring case/punctuation) — not just when one of
+    these words appears inside a longer question, so "shukriya, lekin
+    mujhe yeh bhi batayein ke..." still goes through normal retrieval."""
+    normalized = re.sub(r"[^\w\s]", "", text).strip().lower()
+    return normalized in _CLOSING_PHRASES
+
+
+CLOSING_MESSAGES = {
+    "urdu_script": [
+        "خوش آمدید! اگر کوئی اور سوال ہو تو بلا جھجک پوچھیں۔",
+        "کوئی بات نہیں۔ جب بھی کوئی اور سوال ہو، یہیں پوچھ لیجیے گا۔",
+    ],
+    "english": [
+        "You're welcome! Feel free to come back anytime you have another question.",
+        "Anytime. I'm here whenever you need to ask something else.",
+    ],
+    "roman_urdu": [
+        "Koi baat nahi! Jab bhi koi aur sawaal ho, bila jhijak pooch lein.",
+        "Khushi hui madad kar ke. Aur kabhi kuch poochna ho to yahin aa jayein.",
+    ],
+}
 
 
 # --- Simple language detection for the NO-MATCH fallback message only ------
@@ -948,6 +1011,32 @@ def classify_and_translate(user_question: str) -> dict:
         return fallback
 
 
+def _last_user_turn(history: list | None, require_substantial: bool = False) -> str | None:
+    """Find the most recent turn that actually came from the user (not the
+    bot), walking backwards through history. Used anywhere we want "what
+    did she just say/ask" for follow-up context -- as opposed to blindly
+    taking history[-1], which is just as likely to be the BOT's previous
+    (often long, multi-topic) reply, and stuffing that into a search query
+    does more harm than good.
+
+    If `require_substantial` is True, bare acknowledgements ("haan", "ok",
+    "yes") are skipped so we land on the last *real* question instead.
+    """
+    if not history:
+        return None
+    for item in reversed(history):
+        if not isinstance(item, dict):
+            continue
+        sender = item.get("sender") or item.get("role")
+        text = item.get("text") or item.get("content")
+        if sender != "user" or not isinstance(text, str) or not text.strip():
+            continue
+        if require_substantial and _is_likely_followup_reply(text):
+            continue
+        return text.strip()
+    return None
+
+
 @app.route("/ask", methods=["POST"])
 def ask():
     data = request.get_json(silent=True) or {}
@@ -961,38 +1050,53 @@ def ask():
     detected_lang = classification["language"]
     search_query = classification["english_query"]
 
-    # ------------------------------------------------------------------
-    # ENHANCEMENT: Append recent context for short / ambiguous queries
-    # ------------------------------------------------------------------
-    if history and len(user_question.split()) <= 5:
-        last_turn = history[-1] if history else {}
-        last_text = last_turn.get("text") or last_turn.get("content", "")
-        if last_text:
-            search_query = f"{last_text} {search_query}"
+    # A pure closing/gratitude remark should never go through KB retrieval
+    # at all — there's nothing to look up, and forcing a match risks
+    # surfacing an unrelated legal fact in response to "thanks" (see
+    # _is_closing_remark docstring for the concrete bug this fixes).
+    if _is_closing_remark(user_question):
+        return jsonify({
+            "answer": random.choice(CLOSING_MESSAGES[detected_lang]),
+            "matched_topic": None,
+            "matched_question": None,
+            "sources": [],
+        })
 
-    # 1. Primary retrieval attempt
+    # 1. Primary retrieval attempt -- always try the question on its own
+    #    first. A short question is often a perfectly self-contained new
+    #    question ("zakat ka nisab kya hai?"), not a follow-up, and it
+    #    should get the chance to match cleanly before any prior-turn text
+    #    gets mixed into its search embedding.
     matched_entry = kb.get_best_match(search_query)
 
-    # 2. Direct fallback using raw question
+    # 2. Direct fallback using raw (untranslated) question.
     if not matched_entry and search_query != user_question:
         matched_entry = kb.get_best_match(user_question)
 
-    # 3. Fallback for bare conversational replies ("yes", "ok", etc.)
-    if not matched_entry and _is_likely_followup_reply(user_question):
-        last_user_question = None
-        if history:
-            for item in reversed(history):
-                sender = item.get("sender") or item.get("role")
-                text = item.get("text") or item.get("content")
-                if sender in ("user",) and isinstance(text, str) and not _is_likely_followup_reply(text):
-                    last_user_question = text.strip()
-                    break
-        
+    # 3. Only if the question alone didn't confidently match anything, and
+    #    it's short enough to plausibly be an elliptical follow-up (either
+    #    a bare "yes"/"haan" reply, or a short trailing question like "aur
+    #    zakat al-fitr?"), retry once with the last thing the USER herself
+    #    said folded in for context. Using the *user's* last turn (not
+    #    whatever the last history item happens to be, which is usually
+    #    the bot's own previous answer) keeps this grounded in what she's
+    #    actually asked about, and only ever fires as a fallback, so a
+    #    genuinely new short question that already matched in step 1/2 is
+    #    never contaminated by unrelated earlier context.
+    if not matched_entry and history and _is_likely_followup_reply(user_question):
+        last_user_question = _last_user_turn(history, require_substantial=True)
         if last_user_question:
             contextual_query = f"{last_user_question} {user_question}"
             classification = classify_and_translate(contextual_query)
             search_query = classification["english_query"]
             matched_entry = kb.get_best_match(search_query)
+    elif not matched_entry and history and len(user_question.split()) <= 5:
+        last_user_question = _last_user_turn(history, require_substantial=True)
+        if last_user_question:
+            contextual_query = f"{last_user_question} {search_query}"
+            matched_entry = kb.get_best_match(contextual_query)
+            if matched_entry:
+                search_query = contextual_query
 
     if not matched_entry:
         logger.info("No confident match for question: %r", user_question)
@@ -1009,11 +1113,21 @@ def ask():
         matched_entry["topic_id"], matched_entry["id"],
     )
 
-    # Gather up to 2 supporting entries from the same topic
+    # Gather up to 2 supporting entries from the same topic -- but only
+    # ones that are genuinely close in meaning to the matched entry, not
+    # just anything sharing the same topic_id. Several topics in the KB
+    # (e.g. the merged Khula/Nafaqa reference) bundle a hundred+ fairly
+    # distinct FAQ entries under one topic_id, so "same topic_id" alone is
+    # a very weak relevance signal -- it was pulling loosely-related or
+    # outright unrelated filler into the LLM's context, which shows up as
+    # unrelated/extra detail bleeding into answers.
+    SUPPORTING_SCORE_MARGIN = 0.12  # max drop-off from the top match's score
     same_topic_candidates = kb.search(search_query, top_k=8)
     supporting_entries = [
         e for e in same_topic_candidates
-        if e["topic_id"] == matched_entry["topic_id"] and e["id"] != matched_entry["id"]
+        if e["topic_id"] == matched_entry["topic_id"]
+        and e["id"] != matched_entry["id"]
+        and e["similarity_score"] >= matched_entry["similarity_score"] - SUPPORTING_SCORE_MARGIN
     ][:2]
 
     if client is None:
@@ -1043,14 +1157,25 @@ def ask():
         )
         llm_answer = response.choices[0].message.content
     except Exception as e:
-        logger.exception("LLM call failed")
+        # Don't fail the request outright when the LLM call errors (e.g.
+        # DashScope quota/billing issues, transient network errors). The
+        # retrieval step already succeeded and matched_entry is a verified
+        # KB answer -- returning a 502 here previously meant the frontend's
+        # fetch treated the whole request as failed and never had a chance
+        # to render the "fallback_answer" field, even though it was right
+        # there in the body. Degrading to the raw KB text with a normal
+        # 200 (same as the client-not-configured path above) means the
+        # person still gets a correct, verified answer -- just without the
+        # LLM's language-matching/tone polish -- instead of the app
+        # appearing to silently break or repeat stale content.
+        logger.exception("LLM call failed; degrading to raw KB answer")
         return jsonify({
-            "error": "LLM call failed.",
-            "details": str(e),
+            "answer": matched_entry["answer"],
             "matched_topic": matched_entry["topic_id"],
             "matched_question": matched_entry["question"],
-            "fallback_answer": matched_entry["answer"],
-        }), 502
+            "sources": matched_entry.get("sources", []),
+            "note": f"LLM call failed ({e.__class__.__name__}) — returning raw KB chunk.",
+        })
 
     return jsonify({
         "answer": llm_answer,

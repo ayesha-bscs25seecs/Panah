@@ -65,8 +65,16 @@ def process_knowledge_base(input_file, output_file):
     updated_topics = []
 
     for topic in kb_data.get("topics", []):
-        topic_id = topic.get("topic_id", "").lower()
-        topic_title = topic.get("title", "")
+        # NOTE: topic dicts use "id" and "title_en" (see retrieval.py's
+        # KnowledgeBase._flatten and knowledge_base.json itself) -- this
+        # previously read "topic_id"/"title", which don't exist on these
+        # objects, so topic_id/topic_title were always "" and the
+        # PRESERVED_TOPICS check below silently never matched anything,
+        # meaning every topic (including the hand-authored Mehr/Nafaqa/
+        # Scam ones this was supposed to skip) would have been sent off to
+        # be reprocessed by the LLM.
+        topic_id = topic.get("id", "").lower()
+        topic_title = topic.get("title_en", "")
         
         # Check if topic needs re-processing
         if any(p in topic_id for p in PRESERVED_TOPICS):

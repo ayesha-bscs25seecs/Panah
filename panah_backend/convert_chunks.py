@@ -169,14 +169,46 @@ def parse_md_file(file_path):
                         if len(w) > 3 and w.lower() not in stop_words
                     }
                 )
-                qa_list.append(
-                    {
-                        "id": "qa_1",
-                        "question": clean_q,
-                        "answer": sec_body,
-                        "keywords": keywords,
-                    }
-                )
+                # GUARDRAIL: this "else" branch fires whenever no bold
+                # "## **Sub Title**" subsections were found inside the
+                # section body -- which also fires when this regex only
+                # matched ONE numbered heading in the whole file, in which
+                # case `sec_body` is *everything from that heading to the
+                # end of the document* (re.split with a single match
+                # returns just two pieces: before and after). That bug
+                # previously produced a single 117,000+ character "answer"
+                # containing an entire reference document. If that happens
+                # again, split defensively on blank-line paragraphs instead
+                # of emitting one unbounded blob.
+                if len(sec_body) > 1500:
+                    paras = [p.strip() for p in re.split(r"\n\s*\n", sec_body) if p.strip()]
+                    packed, current, current_len = [], [], 0
+                    for p in paras:
+                        if current_len + len(p) > 1200 and current:
+                            packed.append("\n\n".join(current))
+                            current, current_len = [], 0
+                        current.append(p)
+                        current_len += len(p)
+                    if current:
+                        packed.append("\n\n".join(current))
+                    for i, piece in enumerate(packed, start=1):
+                        qa_list.append(
+                            {
+                                "id": f"qa_{i}",
+                                "question": clean_q,
+                                "answer": piece,
+                                "keywords": keywords,
+                            }
+                        )
+                else:
+                    qa_list.append(
+                        {
+                            "id": "qa_1",
+                            "question": clean_q,
+                            "answer": sec_body,
+                            "keywords": keywords,
+                        }
+                    )
 
             topic_id = re.sub(r"[^\w]", "_", sec_title.lower()).strip("_")
             topics_data.append(
