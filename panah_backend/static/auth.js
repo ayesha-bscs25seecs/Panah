@@ -38,6 +38,9 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 auth.useEmulator("http://127.0.0.1:9099");
 
+/** i18n lookup helper — falls back to the raw key if a translation is missing. */
+const _t = (window.PanahI18n && window.PanahI18n.t) ? window.PanahI18n.t.bind(window.PanahI18n) : (k) => k;
+
 /* ===================================================================
    2. DOM REFERENCES
    =================================================================== */
@@ -117,18 +120,18 @@ phoneForm.addEventListener("submit", async function (e) {
 
   const phoneNumber = toE164(phoneInput.value);
   if (!phoneNumber) {
-    showError("Mobile number lagta hai adhoora hai — 10 digit number likhein (e.g. 3001234567).");
+    showError(_t("auth.phoneInvalid"));
     return;
   }
 
-  setButtonBusy(sendCodeBtn, true, "Sending…", "Send code");
+  setButtonBusy(sendCodeBtn, true, _t("auth.sending"), _t("auth.sendCode"));
 
   try {
     const appVerifier = ensureRecaptcha();
     confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, appVerifier);
     pendingPhoneNumber = phoneNumber;
 
-    otpSentToNote.textContent = `Code sent to ${phoneNumber}`;
+    otpSentToNote.textContent = _t("auth.codeSentTo").replace("{number}", phoneNumber);
     phoneForm.hidden = true;
     otpForm.hidden = false;
     otpInput.focus();
@@ -140,9 +143,9 @@ phoneForm.addEventListener("submit", async function (e) {
         if (window.grecaptcha) window.grecaptcha.reset(widgetId);
       });
     }
-    showError("Code bhejne mein masla hua. Number check karke dobara koshish karein.");
+    showError(_t("auth.sendFailed"));
   } finally {
-    setButtonBusy(sendCodeBtn, false, "Sending…", "Send code");
+    setButtonBusy(sendCodeBtn, false, _t("auth.sending"), _t("auth.sendCode"));
   }
 });
 
@@ -156,15 +159,15 @@ otpForm.addEventListener("submit", async function (e) {
 
   const code = otpInput.value.trim();
   if (!code || code.length < 4) {
-    showError("6-digit code likhein.");
+    showError(_t("auth.otpInvalid"));
     return;
   }
   if (!confirmationResult) {
-    showError("Session expire ho gaya. Number dobara submit karein.");
+    showError(_t("auth.sessionExpired"));
     return;
   }
 
-  setButtonBusy(verifyCodeBtn, true, "Verifying…", "Verify & continue");
+  setButtonBusy(verifyCodeBtn, true, _t("auth.verifying"), _t("auth.verify"));
 
   try {
     const userCredential = await confirmationResult.confirm(code);
@@ -193,9 +196,9 @@ otpForm.addEventListener("submit", async function (e) {
     window.location.href = "/chat";
   } catch (err) {
     console.error("OTP verification failed:", err);
-    showError("Code sahi nahi hai ya expire ho gaya. Dobara koshish karein.");
+    showError(_t("auth.otpWrong"));
   } finally {
-    setButtonBusy(verifyCodeBtn, false, "Verifying…", "Verify & continue");
+    setButtonBusy(verifyCodeBtn, false, _t("auth.verifying"), _t("auth.verify"));
   }
 });
 
