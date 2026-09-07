@@ -1333,12 +1333,66 @@ def ask():
     })
 
 
+def _transliterate_to_urdu_script(text: str) -> str:
+    """Convert Roman-Urdu text to Urdu script via the LLM.
+
+    If the text already contains Urdu-script characters it is returned
+    unchanged.  If the LLM call fails for any reason the original text is
+    returned so that TTS still attempts synthesis (graceful degradation).
+    """
+    if _URDU_SCRIPT_RE.search(text):
+        return text  # already Urdu script — nothing to do
+
+    if client is None:
+        return text  # no LLM available — best-effort with original text
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            max_tokens=800,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a Roman-Urdu-to-Urdu-script converter. "
+                        "The user will give you text written in Roman Urdu "
+                        "(Urdu words spelled with Latin/English letters). "
+                        "Convert it into proper Urdu script (اردو رسم الخط). "
+                        "Rules:\n"
+                        "- Return ONLY the Urdu-script text, nothing else.\n"
+                        "- Do not translate, summarise, or add any commentary.\n"
+                        "- Keep the meaning and wording exactly the same.\n"
+                        "- If the text already contains Urdu script, return it unchanged.\n"
+                        "- Preserve punctuation and line breaks as-is."
+                    ),
+                },
+                {"role": "user", "content": text},
+            ],
+        )
+        converted = (response.choices[0].message.content or "").strip()
+        # Sanity: the LLM should have returned something with Urdu characters.
+        if converted and _URDU_SCRIPT_RE.search(converted):
+            return converted
+        logger.warning(
+            "Roman→Urdu transliteration returned no Urdu script; "
+            "falling back to original text."
+        )
+        return text
+    except Exception:
+        logger.exception("Roman→Urdu transliteration LLM call failed")
+        return text
+
+
 # --- Azure Text-to-Speech for Urdu responses ----------------------------
 @app.route("/api/tts-urdu", methods=["POST"])
 def tts_urdu():
     """Synthesize Urdu text to speech using Azure Cognitive Services.
 
-    Expects JSON body: {"text": "...Urdu text..."}
+    If the incoming text is Roman Urdu (Latin letters), it is first
+    transliterated to Urdu script via the LLM so that the Azure neural
+    voice (ur-PK-UzmaNeural) can pronounce it correctly.
+
+    Expects JSON body: {"text": "...Urdu or Roman-Urdu text..."}
     Returns: WAV audio (audio/wav) or a JSON error on failure.
     """
     import azure.cognitiveservices.speech as speechsdk
@@ -1347,6 +1401,9 @@ def tts_urdu():
     text = (data.get("text") or "").strip()
     if not text:
         return jsonify({"error": "Missing 'text' in request body."}), 400
+
+    # ── Transliterate Roman Urdu → Urdu script for correct pronunciation ──
+    text = _transliterate_to_urdu_script(text)
 
     speech_key = os.environ.get("AZURE_SPEECH_KEY")
     speech_region = os.environ.get("AZURE_SPEECH_REGION", "centralindia")
