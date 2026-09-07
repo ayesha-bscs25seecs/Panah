@@ -487,9 +487,53 @@ function setSuggestedChipsVisible(visible) {
    8. SPEECH SYNTHESIS  (Text-to-Speech — bot reads replies aloud)
    =================================================================== */
 
+/**
+ * Strips Markdown / formatting symbols from bot replies before they are
+ * sent to any TTS engine (Azure or browser SpeechSynthesis), so the voice
+ * doesn't read out "asterisk", "hash", stray colons from headings, list
+ * markers, etc. Purely for speech — the on-screen text keeps its formatting.
+ */
+function stripMarkdownForSpeech(text) {
+  if (typeof text !== "string") return "";
+  return text
+    // fenced code blocks
+    .replace(/```[\s\S]*?```/g, " ")
+    // inline code `like this`
+    .replace(/`([^`]+)`/g, "$1")
+    // images ![alt](url)
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    // links [text](url)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    // bold/italic: ***x***, **x**, *x*, ___x___, __x__, _x_
+    .replace(/(\*\*\*|___)(.*?)\1/g, "$2")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    // heading markers, e.g. "### Note:" -> "Note:"
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    // blockquote markers
+    .replace(/^\s{0,3}>\s?/gm, "")
+    // horizontal rules (---, ***, ___)
+    .replace(/^\s*([-*_])(\s*\1){2,}\s*$/gm, " ")
+    // bullet list markers
+    .replace(/^\s*[-*+]\s+/gm, "")
+    // numbered list markers, e.g. "1. "
+    .replace(/^\s*\d+[.)]\s+/gm, "")
+    // table pipes
+    .replace(/\|/g, " ")
+    // any leftover stray markdown symbols
+    .replace(/[*_#`~]/g, "")
+    // collapse whitespace
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function speakText(text, replyLanguage) {
   // ── Mute gate (checked FIRST — no API call, no characters spent) ──
   if (!sessionVolumeOn) return;
+
+  // Clean Markdown/formatting out of the text so TTS doesn't read symbols aloud.
+  text = stripMarkdownForSpeech(text);
+  if (!text) return;
 
   // Route TTS using the backend's detected question language (returned as
   // response_language in the /ask reply) when available.  This is far more
