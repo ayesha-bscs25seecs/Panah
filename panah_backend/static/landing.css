@@ -506,6 +506,15 @@ body.landing-body {
   line-height: 1.55;
 }
 
+.topics-more-hint {
+  text-align: center;
+  margin: 20px auto 0;
+  font-size: 0.88rem;
+  color: var(--gray);
+  opacity: 0.75;
+  font-style: italic;
+}
+
 /* ==========================================================================
    HOW IT WORKS
    ========================================================================== */
