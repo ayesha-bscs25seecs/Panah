@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Panah, Reviews{% endblock %}
+{% block description %}Panah, share your review and feedback.{% endblock %}
+
+{% block content %}
+  <main class="content-page-main">
+    <section class="content-hero">
+      <h1 data-i18n="review.title">Share your review</h1>
+      <p data-i18n="review.lead">We'd love to hear your feedback.</p>
+    </section>
+
+    <section class="content-body">
+      <form class="contact-form" id="review-form">
+        <div>
+          <label for="review-text" data-i18n="review.formReview">Your Review</label>
+          <textarea id="review-text" required></textarea>
+        </div>
+        <button type="submit" data-i18n="review.formSubmit">Submit Review</button>
+      </form>
+
+      <p id="review-status" data-i18n="review.note">Thank you for your feedback!</p>
+    </section>
+
+    <section class="reviews-list" id="reviews-list">
+      <h2 data-i18n="review.allReviews">What people are saying</h2>
+      {% for r in reviews %}
+      <div class="review-card">
+        <p class="review-text">{{ r.review_text }}</p>
+        <small class="review-date">{{ r.created_at[:10] }}</small>
+      </div>
+      {% else %}
+      <p class="no-reviews" id="no-reviews" data-i18n="review.noReviews">No reviews yet — be the first!</p>
+      {% endfor %}
+    </section>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function () {
+  var form = document.getElementById("review-form");
+  var status = document.getElementById("review-status");
+  if (!form) return;
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = document.getElementById("review-text").value.trim();
+    if (!text) return;
+
+    var btn = form.querySelector("button[type=submit]");
+    btn.disabled = true;
+
+    fetch("/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ review_text: text })
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Server error");
+      return res.json();
+    })
+    .then(function () {
+      status.textContent = "✓ " + (window.PanahI18n
+        ? window.PanahI18n.t("review.thankYou")
+        : "Thank you for your review!");
+      status.style.color = "#2e7d32";
+      document.getElementById("review-text").value = "";
+
+      // Remove "no reviews" placeholder if present
+      var noneMsg = document.getElementById("no-reviews");
+      if (noneMsg) noneMsg.remove();
+
+      // Prepend the new review card to the list
+      var list = document.getElementById("reviews-list");
+      if (list) {
+        var card = document.createElement("div");
+        card.className = "review-card";
+        var p = document.createElement("p");
+        p.className = "review-text";
+        p.textContent = text;
+        var small = document.createElement("small");
+        small.className = "review-date";
+        small.textContent = new Date().toISOString().slice(0, 10);
+        card.appendChild(p);
+        card.appendChild(small);
+        // Insert after the <h2>
+        var h2 = list.querySelector("h2");
+        if (h2 && h2.nextSibling) {
+          list.insertBefore(card, h2.nextSibling);
+        } else {
+          list.appendChild(card);
+        }
+      }
+    })
+    .catch(function () {
+      status.textContent = "Something went wrong. Please try again.";
+      status.style.color = "#c62828";
+    })
+    .finally(function () {
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+{% endblock %}

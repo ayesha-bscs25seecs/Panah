@@ -95,9 +95,34 @@ def about():
     return render_template("about.html", active_page="about")
 
 
-@app.route("/contact")
-def contact():
-    return render_template("contact.html", active_page="contact")
+@app.route("/review", methods=["GET", "POST"])
+def review():
+    if request.method == "POST":
+        """Store an anonymous review from any visitor.
+        No phone or identity is stored — privacy by design."""
+        data = request.get_json(silent=True) or {}
+        review_text = (data.get("review_text") or "").strip()
+        if not review_text:
+            return jsonify({"error": "Missing 'review_text' in request body."}), 400
+
+        conn = _get_db()
+        conn.execute(
+            "INSERT INTO reviews (review_text) VALUES (?)",
+            (review_text,),
+        )
+        conn.commit()
+        conn.close()
+        logger.info("Anonymous review submitted")
+        return jsonify({"success": True})
+
+    # Fetch all reviews for display
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT id, review_text, created_at FROM reviews ORDER BY created_at DESC"
+    ).fetchall()
+    conn.close()
+    reviews = [dict(r) for r in rows]
+    return render_template("review.html", active_page="review", reviews=reviews)
 
 
 @app.route("/privacy")
@@ -138,9 +163,14 @@ def redirect_about():
     return redirect(url_for("about"), code=301)
 
 
+@app.route("/review.html")
+def redirect_review():
+    return redirect(url_for("review"), code=301)
+
+
 @app.route("/contact.html")
-def redirect_contact():
-    return redirect(url_for("contact"), code=301)
+def redirect_contact_legacy():
+    return redirect(url_for("review"), code=301)
 
 
 @app.route("/privacy.html")
@@ -225,6 +255,13 @@ def init_db():
             messages TEXT DEFAULT '[]',
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (phone) REFERENCES users(phone)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            review_text TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()

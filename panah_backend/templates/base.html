@@ -10,7 +10,7 @@
     {% block content %}      — page-specific body content inside <main>
     {% block scripts %}      — page-specific <script> tags (default: i18n.js)
 
-  Routes pass active_page="home"|"about"|"contact"|"privacy" so the
+  Routes pass active_page="home"|"about"|"review"|"privacy" so the
   nav can highlight the current link.
 #}
 
@@ -63,7 +63,7 @@
     <nav class="landing-nav" id="landing-nav" aria-label="Main navigation">
       <a href="{{ url_for('home') }}" class="{{ 'active' if active_page == 'home' else '' }}" data-i18n="nav.home">Home</a>
       <a href="{{ url_for('about') }}" class="{{ 'active' if active_page == 'about' else '' }}" data-i18n="nav.about">About</a>
-      <a href="{{ url_for('contact') }}" class="{{ 'active' if active_page == 'contact' else '' }}" data-i18n="nav.contact">Contact</a>
+      <a href="{{ url_for('review') }}" class="{{ 'active' if active_page == 'review' else '' }}" data-i18n="nav.review">Reviews</a>
       <a href="{{ url_for('privacy') }}" class="{{ 'active' if active_page == 'privacy' else '' }}" data-i18n="nav.privacy">Privacy</a>
       <a href="{{ url_for('auth_page') }}" class="landing-nav-login" data-i18n="nav.login">Login</a>
       <a href="{{ url_for('chat_page') }}" class="landing-nav-chat" data-i18n="nav.chat">Chat</a>
@@ -92,7 +92,7 @@
       <nav class="landing-footer-nav" aria-label="Footer navigation">
         <a href="{{ url_for('home') }}" data-i18n="nav.home">Home</a>
         <a href="{{ url_for('about') }}" data-i18n="nav.about">About</a>
-        <a href="{{ url_for('contact') }}" data-i18n="nav.contact">Contact</a>
+        <a href="{{ url_for('review') }}" data-i18n="nav.review">Reviews</a>
         <a href="{{ url_for('privacy') }}" data-i18n="nav.privacy">Privacy</a>
         <a href="{{ url_for('chat_page') }}" data-i18n="nav.chat">Chat</a>
       </nav>

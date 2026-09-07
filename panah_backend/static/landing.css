@@ -1,6 +1,6 @@
 /* ==========================================================================
    Panah — landing.css
-   Shared styles for the landing, About, Contact, Privacy, and entry pages.
+   Shared styles for the landing, About, Review, Privacy, and entry pages.
    Loaded after style.css so it reuses the design-system custom properties.
    ========================================================================== */
 
@@ -674,7 +674,7 @@ body.landing-body {
 .entry-skip:hover { color: var(--maroon); }
 
 /* ==========================================================================
-   CONTENT PAGES (About / Contact / Privacy)
+   CONTENT PAGES (About / Review / Privacy)
    ========================================================================== */
 .content-page-main {
   flex: 1;
@@ -818,6 +818,50 @@ body.landing-body {
 }
 .contact-meta p:last-child { margin-bottom: 0; }
 .contact-meta strong { color: var(--maroon); }
+
+/* ==========================================================================
+   REVIEWS LIST (Review page)
+   ========================================================================== */
+.reviews-list {
+  padding: 0 var(--section-pad-x) 64px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.reviews-list h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--maroon);
+  margin: 0 0 20px;
+}
+
+.review-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(31, 62, 67, 0.1);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+.review-text {
+  margin: 0 0 8px;
+  font-size: 0.96rem;
+  color: var(--teal);
+  line-height: 1.7;
+}
+
+.review-date {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--gray);
+  opacity: 0.7;
+}
+
+.no-reviews {
+  font-size: 0.96rem;
+  color: var(--gray);
+  font-style: italic;
+}
 
 /* ==========================================================================
    DESKTOP
