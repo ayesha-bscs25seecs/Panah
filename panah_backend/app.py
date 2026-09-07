@@ -1383,7 +1383,49 @@ def _transliterate_to_urdu_script(text: str) -> str:
         return text
 
 
-# --- Azure Text-to-Speech for Urdu responses ----------------------------
+# --- Azure Text-to-Speech for bot voice replies -------------------------
+def _azure_tts_speak(text, voice_name):
+    """Synthesize `text` with Azure Cognitive Services using `voice_name`.
+
+    Shared helper for the /api/tts-urdu and /api/tts-english endpoints so
+    both voices keep identical key handling and error reporting.
+    Returns (audio_bytes, None) on success or (None, error_detail) on failure.
+    """
+    import azure.cognitiveservices.speech as speechsdk
+
+    speech_key = os.environ.get("AZURE_SPEECH_KEY")
+    speech_region = os.environ.get("AZURE_SPEECH_REGION", "centralindia")
+
+    if not speech_key:
+        return None, "AZURE_SPEECH_KEY not configured on the server."
+
+    try:
+        speech_config = speechsdk.SpeechConfig(
+            subscription=speech_key, region=speech_region
+        )
+        speech_config.speech_synthesis_voice_name = voice_name
+
+        # audio_config=None tells the SDK to return raw bytes in
+        # result.audio_data instead of trying to play through a speaker
+        # device (which would fail on a headless server).
+        synthesizer = speechsdk.SpeechSynthesizer(
+            speech_config=speech_config, audio_config=None
+        )
+        result = synthesizer.speak_text_async(text).get()
+
+        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            return result.audio_data, None
+
+        error_detail = result.properties.get(
+            speechsdk.PropertyId.SpeechServiceResponse_JsonErrorDetails
+        )
+        logger.error("Azure TTS synthesis failed: %s", error_detail)
+        return None, error_detail
+    except Exception as e:
+        logger.exception("Azure TTS synthesis error")
+        return None, str(e)
+
+
 @app.route("/api/tts-urdu", methods=["POST"])
 def tts_urdu():
     """Synthesize Urdu text to speech using Azure Cognitive Services.
@@ -1395,8 +1437,6 @@ def tts_urdu():
     Expects JSON body: {"text": "...Urdu or Roman-Urdu text..."}
     Returns: WAV audio (audio/wav) or a JSON error on failure.
     """
-    import azure.cognitiveservices.speech as speechsdk
-
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
     if not text:
@@ -1405,41 +1445,41 @@ def tts_urdu():
     # ── Transliterate Roman Urdu → Urdu script for correct pronunciation ──
     text = _transliterate_to_urdu_script(text)
 
-    speech_key = os.environ.get("AZURE_SPEECH_KEY")
-    speech_region = os.environ.get("AZURE_SPEECH_REGION", "centralindia")
+    audio_data, error_detail = _azure_tts_speak(text, "ur-PK-UzmaNeural")
+    if audio_data is None:
+        return jsonify({
+            "error": "Speech synthesis failed.",
+            "details": error_detail,
+        }), 500
+    return Response(audio_data, mimetype="audio/wav")
 
-    if not speech_key:
-        return jsonify({"error": "AZURE_SPEECH_KEY not configured on the server."}), 500
 
-    try:
-        speech_config = speechsdk.SpeechConfig(
-            subscription=speech_key, region=speech_region
-        )
-        speech_config.speech_synthesis_voice_name = "ur-PK-UzmaNeural"
+@app.route("/api/tts-english", methods=["POST"])
+def tts_english():
+    """Synthesize English text to speech using Azure Cognitive Services
+    (en-US-JennyNeural, a female voice matching Panah's persona).
 
-        # audio_config=None tells the SDK to return raw bytes in
-        # result.audio_data instead of trying to play through a speaker
-        # device (which would fail on a headless server).
-        synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=speech_config, audio_config=None
-        )
-        result = synthesizer.speak_text_async(text).get()
+    English replies used to rely on the browser's SpeechSynthesis API,
+    which Chrome's user-activation policy silently rejects (utterances fail
+    with error "not-allowed", e.g. the spoken welcome message right after
+    page load). Routing English through the same Azure pipeline as Urdu
+    puts both voices on the identical, proven playback channel.
 
-        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            audio_data = result.audio_data
-            return Response(audio_data, mimetype="audio/wav")
-        else:
-            error_detail = result.properties.get(
-                speechsdk.PropertyId.SpeechServiceResponse_JsonErrorDetails
-            )
-            logger.error("Azure TTS synthesis failed: %s", error_detail)
-            return jsonify({
-                "error": "Speech synthesis failed.",
-                "details": error_detail,
-            }), 500
-    except Exception as e:
-        logger.exception("Azure TTS endpoint error")
-        return jsonify({"error": "Speech synthesis failed.", "details": str(e)}), 500
+    Expects JSON body: {"text": "...English text..."}
+    Returns: WAV audio (audio/wav) or a JSON error on failure.
+    """
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "Missing 'text' in request body."}), 400
+
+    audio_data, error_detail = _azure_tts_speak(text, "en-US-JennyNeural")
+    if audio_data is None:
+        return jsonify({
+            "error": "Speech synthesis failed.",
+            "details": error_detail,
+        }), 500
+    return Response(audio_data, mimetype="audio/wav")
 
 
 @app.route("/health", methods=["GET"])

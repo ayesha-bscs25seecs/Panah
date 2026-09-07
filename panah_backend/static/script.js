@@ -6,7 +6,8 @@
  * FEATURES
  *  - Sends questions to the Flask /ask API and displays replies
  *  - Voice input via browser SpeechRecognition (toggleable Urdu/English)
- *  - Voice output via browser SpeechSynthesis (auto-reads bot replies)
+ *  - Voice output via Azure neural TTS for BOTH Urdu and English
+ *    (auto-reads bot replies), with browser SpeechSynthesis as fallback only
  *  - Two volume toggles that work together (see section 10):
  *      top-right speaker button  -> session-only mute, resets on reload
  *      Settings "Voice Output"   -> persistent, per-account preference
@@ -560,41 +561,49 @@ function speakText(text, replyLanguage) {
     }
   }
 
-  if (useUrduTTS) {
-    // ── Urdu / Roman Urdu → Azure TTS ──
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/tts-urdu`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
-        if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
+  // ── Both languages go through the SAME Azure TTS + <audio> pipeline ──
+  // English used to use browser SpeechSynthesis, but Chrome's
+  // user-activation policy silently rejects those utterances with error
+  // "not-allowed" (e.g. the spoken welcome message right after page load),
+  // and other browsers are equally inconsistent. Routing English through
+  // Azure (en-US-JennyNeural) keeps both voices on the identical playback
+  // channel that already works for Urdu. Browser SpeechSynthesis remains
+  // only as the fallback when the Azure call fails.
+  const ttsEndpoint = useUrduTTS ? "/api/tts-urdu" : "/api/tts-english";
+  const browserFallback = useUrduTTS ? _speakBrowserFallback : _speakBrowserEnglish;
 
-        // Re-check mute in case the user toggled while the request was in flight
-        if (!sessionVolumeOn) return;
+  (async () => {
+    try {
+      const res = await fetch(`${API_BASE}${ttsEndpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
 
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        currentAzureAudio = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); currentAzureAudio = null; };
-        await audio.play();
-      } catch (err) {
-        console.warn("Azure TTS failed, falling back to browser TTS:", err);
-        _speakBrowserFallback(text);
-      }
-    })();
-  } else {
-    // ── English → browser SpeechSynthesis (female voice) ──
-    _speakBrowserEnglish(text);
-  }
+      // Re-check mute in case the user toggled while the request was in flight
+      if (!sessionVolumeOn) return;
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAzureAudio = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); currentAzureAudio = null; };
+      await audio.play();
+    } catch (err) {
+      console.warn("Azure TTS failed, falling back to browser TTS:", err);
+      browserFallback(text);
+    }
+  })();
 }
 
 /**
  * Browser SpeechSynthesis with a female English voice.
- * Used as the primary path for English replies and as a fallback when
- * Azure TTS fails for Urdu replies.
+ * FALLBACK ONLY — used when the Azure /api/tts-english call fails. Note
+ * that Chrome's user-activation policy blocks these utterances with
+ * error "not-allowed" in contexts without a recent user gesture (e.g.
+ * the welcome message at page load), which is exactly why English is
+ * routed through Azure first now.
  */
 function _speakBrowserEnglish(text) {
   if (!("speechSynthesis" in window)) return;
